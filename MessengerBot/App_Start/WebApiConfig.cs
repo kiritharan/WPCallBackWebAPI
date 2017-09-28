@@ -9,6 +9,9 @@ namespace MessengerBot
     {
         public static void Register(HttpConfiguration config)
         {
+
+            config.Routes.IgnoreRoute("", "");
+            /*
             // Web API configuration and services
 
             // Web API routes
@@ -18,7 +21,7 @@ namespace MessengerBot
                 name: "DefaultApi",
                 routeTemplate: "api/{controller}/{id}",
                 defaults: new { id = RouteParameter.Optional }
-            );
+            );*/
         }
     }
 }
