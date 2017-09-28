@@ -16,8 +16,8 @@ namespace MessengerBot.Controllers
 {
 	public class WebhookController : ApiController
 	{
-		string pageToken = "page token";
-		string appSecret = "app secret";
+		string pageToken = "DQVJ2SzVFMkpvNmM1QkpNZAUxrX1BMdUZAySW5uaWQ1UnZAkRGFsLU15aW1wZAkpwenNPTjNQSENIT2RBRGtNZAlNfbjZAkQ21vRmk4aTVpdEpGMlVoWl94ZAW4tNWpaMDgySXVqOTlaNnlyLWpfS3dvd3g5OEdnQUlKcnBLTzJxRFJ1dGZAkOVJreUI0b1o3U2NtS2FzUFprME5NcHl2YzNnTEo5a2JxRm9NRnV0MllGSWxkZATZA3a3BMUmZAXWk1BRUxqNjJmcTBMSlhkd2czOVRHTVdISAZDZD";
+		string appSecret = "29e07098746b8ab7ec1b28210dbfe5ac";
 
 		public HttpResponseMessage Get()
 		{
