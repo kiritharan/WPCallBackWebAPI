@@ -16,10 +16,13 @@ namespace MessengerBot.Controllers
 {
 	public class WebhookController : ApiController
 	{
-		string pageToken = "DQVJ2SzVFMkpvNmM1QkpNZAUxrX1BMdUZAySW5uaWQ1UnZAkRGFsLU15aW1wZAkpwenNPTjNQSENIT2RBRGtNZAlNfbjZAkQ21vRmk4aTVpdEpGMlVoWl94ZAW4tNWpaMDgySXVqOTlaNnlyLWpfS3dvd3g5OEdnQUlKcnBLTzJxRFJ1dGZAkOVJreUI0b1o3U2NtS2FzUFprME5NcHl2YzNnTEo5a2JxRm9NRnV0MllGSWxkZATZA3a3BMUmZAXWk1BRUxqNjJmcTBMSlhkd2czOVRHTVdISAZDZD";
-		string appSecret = "29e07098746b8ab7ec1b28210dbfe5ac";
+		//string pageToken = "DQVJ2SzVFMkpvNmM1QkpNZAUxrX1BMdUZAySW5uaWQ1UnZAkRGFsLU15aW1wZAkpwenNPTjNQSENIT2RBRGtNZAlNfbjZAkQ21vRmk4aTVpdEpGMlVoWl94ZAW4tNWpaMDgySXVqOTlaNnlyLWpfS3dvd3g5OEdnQUlKcnBLTzJxRFJ1dGZAkOVJreUI0b1o3U2NtS2FzUFprME5NcHl2YzNnTEo5a2JxRm9NRnV0MllGSWxkZATZA3a3BMUmZAXWk1BRUxqNjJmcTBMSlhkd2czOVRHTVdISAZDZD";
+		//string appSecret = "29e07098746b8ab7ec1b28210dbfe5ac";
 
-		public HttpResponseMessage Get()
+        string pageToken = "DQVJ2dE9yeXpFaVg3SnFNVGU1dXMySVVnd2V1ZA3NMRlpBTHdLaTRSRjNxRHBKU0l1RXF0a2NBejJfODdRRHBrZAWVZAZADhyaEEzck5PdkNBZA1ZAfN0RMX0xGem50cnVPbXl3bjNjamRFYWJab0lkckRSVFRxSm5WZAWtlMHczWGc2elZA0TlRGNWdob3FOT2RrYWlLWjZANVWxBc1NXWXNOeHVjLTM2QUFCYjBETExHbUljRVQtcWplM25BdWtJOFducDVsVVNRLTRvQ0xpWUNRWFlVeAZDZD";
+        string appSecret = "2e29f507e5a470de35fe33822eeb3365";
+
+        public HttpResponseMessage Get()
 		{
 			var querystrings = Request.GetQueryNameValuePairs().ToDictionary(x => x.Key, x => x.Value);
 			if (querystrings["hub.verify_token"] == "hello")
