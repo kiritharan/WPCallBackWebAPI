@@ -14,22 +14,22 @@ namespace MessengerBot.Models
     {
         public string id { get; set; }
 
-        public long time { get; set; }
+        public long time { get; set; }      
 
         public List<Messaging> messaging { get; set; }
 
-        public List<Changes> Changes { get; set; }
+      //  public List<Change> changes { get; set; }
     }
 
-    public class Changes
+    public class Change
     {
         public Sender field { get; set; }
-        public Sender value { get; set; }
-        public Sender post_id { get; set; }
-        public Sender verb { get; set; }
-        public Sender created_time { get; set; }
-        public Sender message { get; set; }
-        public Sender permalink_url { get; set; }
+        //public Sender value { get; set; }
+        //public Sender post_id { get; set; }
+        //public Sender verb { get; set; }
+        //public Sender created_time { get; set; }
+        //public Sender message { get; set; }
+        //public Sender permalink_url { get; set; }
         //public Sender message { get; set; }
         //public Sender message { get; set; }
 

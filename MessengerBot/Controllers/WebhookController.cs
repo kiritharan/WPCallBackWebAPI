@@ -45,10 +45,55 @@ namespace MessengerBot.Controllers
 				return new HttpResponseMessage(HttpStatusCode.BadRequest);
 
 			var value = JsonConvert.DeserializeObject<WebhookModel>(body);
-			if (value._object != "page")
-				return new HttpResponseMessage(HttpStatusCode.OK);
 
-			foreach (var item in value.entry[0].messaging)
+            
+
+            if (value._object == "group")
+            {
+                var json = (JToken.Parse(body))["entry"][0]["changes"][0];
+
+                if (json["field"].ToString() == "posts")
+                {
+                    string from = json["value"]["from"].ToString();
+                    string type = json["value"]["type"].ToString();
+                    string target_type = json["value"]["target_type"].ToString();
+                    string community = json["value"]["community"].ToString();
+                    string post_id = json["value"]["post_id"].ToString();
+                    string verb = json["value"]["verb"].ToString();
+                    string created_time = json["value"]["created_time"].ToString();
+                    string message = json["value"]["message"].ToString();
+                    string permalink_url = json["value"]["permalink_url"].ToString();
+                }
+                else if (json["field"].ToString() == "comments")
+                {
+                    string from = json["value"]["from"].ToString();
+                    string type = json["value"]["type"].ToString();
+                    string target_type = json["value"]["target_type"].ToString();
+                    string community = json["value"]["community"].ToString();
+                    string post_id = json["value"]["post_id"].ToString();
+                    string verb = json["value"]["verb"].ToString();
+                    string created_time = json["value"]["created_time"].ToString();
+                    string message = json["value"]["message"].ToString();
+                    string permalink_url = json["value"]["permalink_url"].ToString();
+                }
+            }
+            else if (value._object == "user")
+            {
+                if (value._object == "message_sends")
+                {
+
+                }
+
+            }
+
+            if (value._object != "page")
+            {
+                //return new HttpResponseMessage(HttpStatusCode.OK);
+            }
+           
+           
+
+            foreach (var item in value.entry[0].messaging)
 			{
 				if (item.message == null && item.postback == null)
 					continue;
@@ -102,3 +147,73 @@ namespace MessengerBot.Controllers
 	}
 }
 
+/*
+ {"entry": 
+[{"changes": 
+[{"field": "posts", 
+"value": {"from": {"id": "100016022019645", "name": "Kiritharan Kanesapillai"}, 
+"type": "status", "target_type": "group", 
+"community": {"id": "1206397592809948"}, 
+"post_id": "483499012017824_545236315844093", 
+"verb": "add", 
+"created_time": "2018-01-16T02:59:58+0000", 
+"message": "iyiiyuiuiu", 
+"permalink_url": "https://cibc.facebook.com/groups/483499012017824/permalink/545236315844093/"}}], 
+"id": "483499012017824", 
+"time": 1516071600}], 
+"object": "group"}
+
+
+{"entry": 
+[{"changes": 
+[{"field": "comments", 
+"value": {"from": {"id": "100016022019645", "name": "Kiritharan Kanesapillai"}, 
+"comment_id": "545236832510708", 
+"community": {"id": "1206397592809948"}, 
+"post_id": "483499012017824_545236315844093", 
+"verb": "add", 
+"created_time": "2018-01-16T03:03:13+0000",
+ "message": "this is comment", 
+"permalink_url": "https://cibc.facebook.com/groups/483499012017824/permalink/545236315844093/?comment_id=545236832510708"}}], 
+"id": "483499012017824", 
+"time": 1516071794}],
+ "object": "group"}
+
+
+{"entry": 
+[{"time": 1516071939, 
+"changes": [{"field": "message_sends", 
+"value": {"created_time": "2018-01-16T03:05:39+0000", 
+"to": {"data": [{"id": "100015950115290", "name": "Lahiru Pinnaduwage", 
+"community": {"id": "1206397592809948"}, 
+"email": "lahiru.pinnaduwage@cibc.com"}]}, 
+"message": "fdfdsffs", 
+"from": {"id": "100016022019645", "name": "Kiritharan Kanesapillai", 
+"community": {"id": "1206397592809948"}, 
+"email": "kiritharan.kanesapillai@cibc.com"}, 
+"id": "m_mid.$cAAAAAAxbb-dnLjM2Mlg_O1EUcVB7"}}], 
+"id": "100016022019645", 
+"uid": "100016022019645"}], 
+"object": "user"}
+
+
+
+
+{"entry": 
+[{"changes": [{"field": "posts", 
+"value": {"from": {"id": "100016022019645", "name": "Kiritharan Kanesapillai"}, 
+"attachments": {"data": [{"target": {"url": "https://lookaside.fbsbx.com/file/Microsoft.AspNet.WebApi.5.2.3.nupkg?token=AWxyec5Jh3XK8wUZQAXSH5zjQGNiuk5P02GMrqi776yC3SjJsZxXHD3AowJcWt8fXNsWVor_OUX1SbJtVqh5PMIN_Foti-Ot0BtkDwbYCK9PAk-aThIQyD8PLNfahR5jOTnHnfYuS6LsQZRFhf5n9vH0luX2Qdm3k5mY7Z-jmPRcnrRdNtuXwv8Etn4bLC7tyE_t0ZipCuybIv5WKcnFUy2ltVkZBeQOwPFgPq6jb9ue9g"}, "title": "Microsoft.AspNet.WebApi.5.2.3.nupkg \u00b7 version 1", 
+"url": "https://lookaside.fbsbx.com/file/Microsoft.AspNet.WebApi.5.2.3.nupkg?token=AWxyec5Jh3XK8wUZQAXSH5zjQGNiuk5P02GMrqi776yC3SjJsZxXHD3AowJcWt8fXNsWVor_OUX1SbJtVqh5PMIN_Foti-Ot0BtkDwbYCK9PAk-aThIQyD8PLNfahR5jOTnHnfYuS6LsQZRFhf5n9vH0luX2Qdm3k5mY7Z-jmPRcnrRdNtuXwv8Etn4bLC7tyE_t0ZipCuybIv5WKcnFUy2ltVkZBeQOwPFgPq6jb9ue9g", 
+"media": {"image": {"src": "https://static.xx.fbcdn.net/rsrc.php/v3/yk/r/VCodXOH-RMH.png", "width": 72, "height": 72}}, 
+"subattachments": {"data": [{"url": "https://cibc.facebook.com/groups/483499012017824/545237825843942/", 
+"type": "album", "target": {"url": "https://cibc.facebook.com/groups/483499012017824/545237825843942/"}, 
+"title": "Photos from Kiritharan Kanesapillai's post in Testing Workplace"}]}, "type": "file_upload"}]}, 
+"type": "status", "target_type": "group", "community": {"id": "1206397592809948"}, 
+"post_id": "483499012017824_545237825843942", 
+"verb": "add", 
+"created_time": "2018-01-16T03:07:45+0000",
+ "permalink_url": "https://cibc.facebook.com/groups/483499012017824/545237825843942/"}}], 
+"id": "483499012017824", 
+"time": 1516072067}], 
+"object": "group"}
+     */
