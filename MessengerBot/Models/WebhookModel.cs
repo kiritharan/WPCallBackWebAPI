@@ -7,38 +7,23 @@ namespace MessengerBot.Models
     {
         [JsonProperty("object")]
         public string _object { get; set; }
-        public List<Entry> entry { get; set; }       
-        public string field { get; set; }
+        public List<Entry> entry { get; set; }
+        
     }
 
     public class Entry
     {
-        List<Post> p = null;
-        //public Entry()
-        //{
-        //    if (p == null)
-        //        p = new List<Post>();
-        //}
+        public string field { get; set; }
         public string id { get; set; }
         public long time { get; set; }
-        public string uid { get; set; }     
-        // public List<Change> changes { get; set; }
-        public List<Message> Messages { get; set; }
-        public void AddPost(Post post)
-        {
-            if (p == null)
-                p = new List<Post>();
-            p.Add(post);
-        }
-
-        public List<Post> Post
-        {
-            get { return p; }
-        }
+        public string uid { get; set; }       
+        public Message Message { get; set; }
+        public Post Post { get; set; }
     }
 
     public class Post
     {
+        public Post() { }
         public User from { get; set; }
         public string type { get; set; }
         public Community community { get; set; }
@@ -46,12 +31,26 @@ namespace MessengerBot.Models
         public string verb { get; set; }
         public string created_time { get; set; }
         public string message { get; set; }
-        public string permalink_url { get; set; }
+        public string permalink_url { get; set; }      
+        public AttachmentColl attachments { get; set; }
        // public string target_type { get; set; }
        // public string community_id { get; set; }
     }
 
+    public class AttachmentColl
+    {
+        public List<Attachment> data { get; set; }
+    }
 
+    public class Attachment
+    {
+        public string description { get; set; }
+
+        public string target { get; set; }
+        public string type { get; set; }
+        public string url { get; set; }
+
+    }
     public class Message
     {
         public User from { get; set; }
