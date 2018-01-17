@@ -1,4 +1,5 @@
 using System;
+using System.Configuration;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -15,6 +16,7 @@ using System.Diagnostics;
 using System.Diagnostics.Tracing;
 
 using System.Xml;
+using System.IO;
 
 namespace MessengerBot.Controllers
 {
@@ -30,7 +32,14 @@ namespace MessengerBot.Controllers
         //string appSecret = "016aedf91eb245872fa87648da4b7b14";
         //string appI = "309396526132314";
 
-        string localFilePath = "";
+        string wpFilesName = "WorkplaceFiles";
+        string wpPostsFileName = "WorkplacePosts";
+        string wpFilteredPostsFileName = "WorkplacePostsFiltered";
+
+        string wpChatFileName = "WorkChatConversations";
+        string wpFilteredChatFileName = "WorkChatConversationsFiltered";
+
+
 
         public HttpResponseMessage Get()
 		{
@@ -114,93 +123,106 @@ namespace MessengerBot.Controllers
         {
             try
             {
+                Trace.TraceInformation("** Transaction start **" + body);
+
                 var value = JsonConvert.DeserializeObject<WebhookModel>(body);
                 WebhookModel model = JsonConvert.DeserializeObject<WebhookModel>(body);
                 
                 model.entry[0].id = value.entry[0].id;
                 model.entry[0].uid = value.entry[0].uid;
                 model.entry[0].time = value.entry[0].time;
-              
-                if ((value._object == "group") || (value._object == "user"))
+
+                var json = (JToken.Parse(body))["entry"][0]["changes"][0];               
+                model.entry[0].field = json["field"].ToString();
+
+                if (model._object == "group")
                 {
-                    var json = (JToken.Parse(body))["entry"][0]["changes"][0];
-                    model.field = json["field"].ToString();
-                  
-                    if ((json["field"].ToString() == "posts") || (json["field"].ToString() == "comments"))
-                    {                       
+                    Trace.TraceInformation("Group Post and " + model.entry[0].field + " type");
+
+                    if ((model.entry[0].field == "posts") || (model.entry[0].field == "comments"))
+                    {
                         Post post = JsonConvert.DeserializeObject<Post>(json["value"].ToString());
+                        model.entry[0].Post = post;
 
-                        Trace.TraceInformation("model1qweq2: " + post.community.ToString());
-                        Trace.TraceInformation("model1qweq3: " + post.created_time.ToString());
-                        Trace.TraceInformation("model1qweq4: " + post.post_id.ToString());
-                        Trace.TraceInformation("model1qweq5: " + post.verb.ToString());
-                        Trace.TraceInformation("model1qweq6: " + post.message.ToString());
-                        Trace.TraceInformation("model1qweq7: " + post.from.ToString());
-                        Trace.TraceInformation("model1qweq8: " + post.permalink_url.ToString());
+                        Trace.TraceInformation("Attachments : " + model.entry[0].Post.attachments.data.Count().ToString());
+
+                        // Add to node if it is add operation (posting, commenting)
+                        if (post.verb == "add") 
+                            CreateXMLNode(model);                                     
+
+                    }
+
+                }
+                else if (model._object == "user")
+                {
+                    Trace.TraceInformation("Group Post: ");
+
+                    if (model.entry[0].field == "message_sends")
+                    {
+                        Trace.TraceInformation("Group Post-field : " + model.entry[0].field);
+
+                        Message msg = JsonConvert.DeserializeObject<Message>(json["value"].ToString());
+
                         try
-                        {  
-                            model.entry[0].AddPost(post);
-
-                      
-
-                        Trace.TraceInformation("model1: " + model.field.ToString());
-                        Trace.TraceInformation("model1: " + model.entry[0].Post[0].type.ToString());
-                        Trace.TraceInformation("model1: " + model.entry[0].Post[0].community.ToString());
-                        Trace.TraceInformation("model1: " + model.entry[0].Post[0].created_time.ToString());
-                        Trace.TraceInformation("model1: " + model.entry[0].Post[0].post_id.ToString());
-                        Trace.TraceInformation("model1: " + model.entry[0].Post[0].verb.ToString());
-                        Trace.TraceInformation("model1: " + model.entry[0].Post[0].message.ToString());
-                        Trace.TraceInformation("model1: " + model.entry[0].Post[0].from.ToString());
-                        Trace.TraceInformation("model1: " + model.entry[0].Post[0].permalink_url.ToString());
+                        {
+                            model.entry[0].Message = msg;
                         }
                         catch (Exception ex) { Trace.TraceError(ex.ToString()); }
-                    }
-
-                    else if (value._object == "user")
-                    {
-                        if (json["field"].ToString() == "message_sends")
-                        {
-                            Trace.TraceInformation("Inside message: ");
-                            Message msg = JsonConvert.DeserializeObject<Message>(json["value"].ToString());
-                            //Message msg = new Message();
-                            //msg.created_time = json["value"]["created_time"].ToString();
-                            //msg.from = JsonConvert.DeserializeObject<User>(json["value"]["from"].ToString());
-                            ////Trace.TraceInformation("to count: " + json["value"]["to"]["data"].Count().ToString());
-                            //List<Recipient> recipients = new List<Models.Recipient>();
-                            //for (int i = 0; i < json["value"]["to"]["data"].Count(); i++)
-                            //{
-                            //    //Trace.TraceInformation("to: " + json["value"]["to"]["data"][i]["name"].ToString());
-                            //    recipients.Add(JsonConvert.DeserializeObject<Recipient>(json["value"]["to"]["data"][i].ToString()));
-                            //}
-
-                            //msg.to = recipients;
-                            //msg.message = json["value"]["message"].ToString();
-                            //msg.id = json["value"]["id"].ToString();
-                            try { 
-                            model.entry[0].Messages.Add(msg);
-                            }
-                            catch (Exception ex) { Trace.TraceError(ex.ToString()); }
-
-                           
-                            Trace.TraceInformation("model1: " + model.field.ToString());
-                            Trace.TraceInformation("model1: " + model.entry[0].Messages[0].created_time.ToString());
-                            Trace.TraceInformation("model1: " + model.entry[0].Messages[0].from.ToString());
-                            Trace.TraceInformation("model1: " + model.entry[0].Messages[0].to.ToString());
-                            Trace.TraceInformation("model1: " + model.entry[0].Messages[0].message.ToString());
-                            Trace.TraceInformation("model1: " + model.entry[0].Messages[0].id.ToString());
-                        }
-                    }
-                    else if (value._object == "page")
-                    {
-                        //return new HttpResponseMessage(HttpStatusCode.OK);
+                     
                     }
                 }
+
+                // if ((model._object == "group") || (model._object == "user"))
+                //{
+                //    if ((model.entry[0].field == "posts") || (model.entry[0].field == "comments"))
+                //    {                       
+                //        Post post = JsonConvert.DeserializeObject<Post>(json["value"].ToString());
+                //        model.entry[0].Post = post;                          
+
+                //        Trace.TraceInformation("model1: " + model.entry[0].field.ToString());
+                //       // Trace.TraceInformation("model1: " + model.entry[0].Post.type.ToString());
+                //        Trace.TraceInformation("model1: " + model.entry[0].Post.community.ToString());
+                //        Trace.TraceInformation("model1: " + model.entry[0].Post.created_time.ToString());
+                //        Trace.TraceInformation("model1: " + model.entry[0].Post.post_id.ToString());
+                //        Trace.TraceInformation("model1: " + model.entry[0].Post.verb.ToString());
+                //        Trace.TraceInformation("model1: " + model.entry[0].Post.message.ToString());
+                //        Trace.TraceInformation("model1: " + model.entry[0].Post.from.ToString());
+                //        Trace.TraceInformation("model1: " + model.entry[0].Post.permalink_url.ToString());
+
+                //    }
+
+                //    else if (model._object == "user")
+                //    {
+                //        if (model.entry[0].field == "message_sends")
+                //        {
+                //            Trace.TraceInformation("Inside message: ");
+                //            Message msg = JsonConvert.DeserializeObject<Message>(json["value"].ToString());
+
+                //            try { 
+                //            model.entry[0].Message = msg;
+                //            }
+                //            catch (Exception ex) { Trace.TraceError(ex.ToString()); }
+
+
+                //            Trace.TraceInformation("model1: " + model.entry[0].field.ToString());
+                //            Trace.TraceInformation("model1: " + model.entry[0].Message.created_time.ToString());
+                //            Trace.TraceInformation("model1: " + model.entry[0].Message.from.ToString());
+                //            Trace.TraceInformation("model1: " + model.entry[0].Message.to.ToString());
+                //            Trace.TraceInformation("model1: " + model.entry[0].Message.message.ToString());
+                //            Trace.TraceInformation("model1: " + model.entry[0].Message.id.ToString());
+                //        }
+                //    }
+                //    else if (value._object == "page")
+                //    {
+                //        //return new HttpResponseMessage(HttpStatusCode.OK);
+                //    }
+                //}
 
                 //  XmlDocument doc = CheckForFile();
 
                 // AddToXMLFile(doc);
 
-                Trace.TraceInformation("** END **");
+                Trace.TraceInformation("** Transaction end **");
             }
             catch(Exception ex) { }
         }
@@ -226,41 +248,113 @@ namespace MessengerBot.Controllers
 
             return doc;
         }
-        private void CreateXMLFile()
-        {
-                      
-        }
 
-
-        private void AddToXMLFile(XmlDocument doc)
+        private void CreateXMLNode(Models.WebhookModel model)
         {
+
+            Trace.TraceInformation("Creating a XML node with a message");
+
+            string xmlNode = "<Posts GroupName='{0}' GroupID='{1}' PostID='{2}' PostedTime='{3}' PostedBy='{4}' Message='{5}' Link='{6}'/>";
+            string filePath = string.Empty;
+            string filteredfilePath = string.Empty;
+            string xmlLog = string.Empty;
+
+            //string postDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigurationManager.AppSettings["WORKPLACEPOSTFILE"]);
+            //string chatDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigurationManager.AppSettings["WORKPLACECHATFILE"]);
+
+          
+            //if (!Directory.Exists(postDirectory))
+            //{
+            //    Trace.TraceInformation("Creating directory " + postDirectory);
+            //    Directory.CreateDirectory(AppDomain.CurrentDomain.BaseDirectory + ConfigurationManager.AppSettings["WORKPLACEPOSTFILE"]);
+            //}else
+            //    Trace.TraceInformation("Directory found: " + postDirectory);
+
+            //if (!Directory.Exists(chatDirectory))
+            //{
+            //    Trace.TraceInformation("Creating directory " + chatDirectory);
+            //    Directory.CreateDirectory(AppDomain.CurrentDomain.BaseDirectory + ConfigurationManager.AppSettings["WORKPLACEPOSTFILE"]);
+            //}
+            //else
+            //    Trace.TraceInformation("Directory found: " + chatDirectory);
+
             try
             {
-                XmlElement userElement = null;
-                XmlElement conversationsElement = null;
-                XmlElement filteredUserElement = null;
-                XmlElement filteredConversationsElement = null;
-                XmlElement exceptionElement = null;
+
+                switch (model.entry[0].field)
+                {
+                    case "posts":
+                    case "comments":
+                        xmlNode = "<Posts GroupName='{0}' GroupID='{1}' PostID='{2}' PostedTime='{3}' PostedBy='{4}' Message='{5}' Link='{6}'/>";
+
+                        filePath = AppDomain.CurrentDomain.BaseDirectory + "/" + ConfigurationManager.AppSettings["WORKPLACEPOSTFILE"] + "/" + wpPostsFileName + "_" + DateTime.Today.ToString("MMddyyyy") + ".txt";
+                        filteredfilePath = AppDomain.CurrentDomain.BaseDirectory + "/" + ConfigurationManager.AppSettings["WORKPLACEPOSTFILE"] + "/" + wpFilteredPostsFileName + "_" + DateTime.Today.ToString("MMddyyyy") + ".txt";
+                       
+                        string groupID = model.entry[0].Post.post_id.Split("_".ToCharArray())[0];
+                        string postID = model.entry[0].Post.post_id.Split("_".ToCharArray())[1];
+                        string postedDate = model.entry[0].Post.created_time;
+                        string postedBy = model.entry[0].Post.from.name + "_" + model.entry[0].Post.from.id;
+                        string message = model.entry[0].Post.message;
+                        xmlLog = string.Format(xmlNode, string.Empty, groupID, postID, postedDate, postedBy, message, string.Empty);
+
+                        break;
+
+                    case "message_sends":
+
+                        filePath = AppDomain.CurrentDomain.BaseDirectory + "/" + ConfigurationManager.AppSettings["WORKPLACECHATFILE"] + "/" + wpChatFileName + "_" + DateTime.Today.ToString("MMddyyyy") + ".txt";
+                        filteredfilePath = AppDomain.CurrentDomain.BaseDirectory + "/" + ConfigurationManager.AppSettings["WORKPLACECHATFILE"] + "/" + wpFilteredChatFileName + "_" + DateTime.Today.ToString("MMddyyyy") + ".txt";
+
+                        break;
+
+                }
 
 
 
-                //userElement = (XmlElement)usersElement.AppendChild(doc.CreateElement("User"));
-                //userElement.SetAttribute("WorkplaceUserID", user.id);
-                //userElement.SetAttribute("UserName", user.name);
-                //conversationsElement = (XmlElement)userElement.AppendChild(doc.CreateElement("Conversations"));
+                //Trace.TraceInformation("filePath: " + filePath);
+                //Trace.TraceInformation("filteredfilePath: " + filteredfilePath);
+                //Trace.TraceInformation("XML: " + xmlLog);
+                //Trace.TraceInformation("App path: " + AppDomain.CurrentDomain.BaseDirectory);
 
+               
 
-                //filteredUserElement = (XmlElement)filteredUsersElement.AppendChild(docFiltered.CreateElement("User"));
-                //filteredUserElement.SetAttribute("WorkplaceUserID", user.id);
-                //filteredUserElement.SetAttribute("UserName", user.name);
-                //filteredConversationsElement = (XmlElement)filteredUserElement.AppendChild(docFiltered.CreateElement("Conversations"));
+                // Create a file if its not exist
+                if (!File.Exists(filePath))
+                {
+                    Trace.TraceInformation("File being created and add");
+                    using (System.IO.StreamWriter file = new System.IO.StreamWriter(filePath))
+                    {
+                        file.WriteLine(xmlLog);
+                    }
+                }
+                // Append to an existing file
+                else
+                {
+                    Trace.TraceInformation("Add to an existign file");
+                    using (StreamWriter sw = File.AppendText(filePath))
+                    {
+                        sw.WriteLine(xmlLog);
+                    }
+                }
 
-
-                //conversationElement = (XmlElement)conversationsElement.AppendChild(doc.CreateElement("Conversation"));
-                //conversationElement.SetAttribute("WorkChatID", json.data[i]["id"].Value);
+                //// Read file and write to Trace
+                //if (!File.Exists(filePath))
+                //{
+                //    Trace.TraceInformation("Reading");
+                //    using (StreamReader sr = File.OpenText(filePath))
+                //    {
+                //        string s = "";
+                //        while ((s = sr.ReadLine()) != null)
+                //        {
+                //            Trace.TraceInformation(s);
+                //        }
+                //    }
+                //}
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceInformation(ex.ToString());
 
             }
-            catch(Exception ex) { }
         }
 
         #endregion
