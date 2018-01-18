@@ -213,10 +213,13 @@ namespace MessengerBot.Controllers
                     if (model.entry[0].field == "message_sends")
                     {
                         Trace.TraceInformation("Group Post-field : " + model.entry[0].field);
+                        
 
                         Message msg = JsonConvert.DeserializeObject<Message>(json["value"].ToString());
                         model.entry[0].Message = msg;
-
+                        Trace.TraceInformation("Msg: " + model.entry[0].Message.message);
+                        Trace.TraceInformation("Msg: " + model.entry[0].Message.attachments.data.Count().ToString());
+                        Trace.TraceInformation("Msg: " + model.entry[0].Message.to.data.Count().ToString());
                         try
                         {
                             model.entry[0].Message = msg;
