@@ -8,7 +8,7 @@ namespace MessengerBot.Models
         [JsonProperty("object")]
         public string _object { get; set; }
         public List<Entry> entry { get; set; }
-        
+
     }
 
     public class Entry
@@ -16,10 +16,18 @@ namespace MessengerBot.Models
         public string field { get; set; }
         public string id { get; set; }
         public long time { get; set; }
-        public string uid { get; set; }       
+        public string uid { get; set; }
         public Message Message { get; set; }
         public Post Post { get; set; }
+      //  public List<Change> Changes { get; set; }
     }
+
+    //public class Change
+    //{
+    //    public string field { get; set; }
+    //    public Post Post { get; set; }
+    //   // public AttachmentColl attachments { get; set; }
+    //}
 
     public class Post
     {
@@ -31,10 +39,10 @@ namespace MessengerBot.Models
         public string verb { get; set; }
         public string created_time { get; set; }
         public string message { get; set; }
-        public string permalink_url { get; set; }      
+        public string permalink_url { get; set; }
         public AttachmentColl attachments { get; set; }
-       // public string target_type { get; set; }
-       // public string community_id { get; set; }
+        // public string target_type { get; set; }
+        // public string community_id { get; set; }
     }
 
     public class AttachmentColl
