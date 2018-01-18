@@ -25,15 +25,7 @@ namespace MessengerBot.Controllers
         string app_ID = ConfigurationManager.AppSettings["app_ID"];
         string appSecret = ConfigurationManager.AppSettings["appSecret"];
         string pageToken = ConfigurationManager.AppSettings["pageToken"];
-        // CIBC Real Time Monitoring App at cibctest.facebook.com
-        //string app_ID = "150764529042457";
-        //string appSecret = "c237e4905e1785299e4f22cdedcab84f";
-        //string pageToken = "DQVJzNEx1bnNheV9JaFNKNTdEMzRYbnZAjQkxEZAnIybkxIVHNrNTdOVnpNRFkxRUdKUC1RRjdSYktNaDZA5bFBQRUlGaWNneG9LS0VGc05vRmQtUDNQanM3MVZAqSktRSS0tZA3NxUk1hZAGVVLVBiWk9MNzlMQWplYjRlem9DcUhaSVBBWTZAOaW9uR3JaQ1RacVZASTTdEUU5rNUFTTzN6aF9lWTE0X3owU0JDeVlseU8zTzUyc1AxWlFvTC1lbnZAWNUVQNjB0dmNLa2N5VzdNV0JCUwZDZD";
-
-        // CIBC Real Time Monitoring App at cibc.facebook.com
-        //string pageToken = "DQVJ0RkRBS05XQlhHbXFzd0dVSjZAIYjlhcEl4VEx0emlfUHN3YWZAvS3pBdHNkTTBISE0yeXlveFFJWjdlbVE0Mk9GZAFZAPdDhUS3RlU2FaZA0xSbWlUZA3MxTVBReXNkRThQV3MxX1R0NWRRdWoycVd5OVBUWGtFWWJESlJRRFowUGxVOWFuU05LT0k4bkU3ZAFlfSWhXVGlwSi03N3NRY3BpdkkxTDJWN3JIWXU0WlJrY09COU5NUFZA2WVh3eG5iRF9rTG03ZATU1dFB6VVNYNHdqXwZDZD";
-        //string appSecret = "016aedf91eb245872fa87648da4b7b14";
-        //string appI = "309396526132314";
+       
 
         string wpFilesName = "WorkplaceFiles";
         string wpPostsFileName = "WorkplacePosts";
@@ -126,7 +118,7 @@ namespace MessengerBot.Controllers
         {
             try
             {
-                Trace.TraceInformation("** Transaction start **" + body);
+                Trace.TraceInformation("** Transaction start **");
 
                 var value = JsonConvert.DeserializeObject<WebhookModel>(body);
                 WebhookModel model = JsonConvert.DeserializeObject<WebhookModel>(body);
@@ -148,20 +140,68 @@ namespace MessengerBot.Controllers
                         Post post = JsonConvert.DeserializeObject<Post>(json["value"].ToString());
                         model.entry[0].Post = post;
 
+                        if (post.verb == "delete")
+                            goto Exit;
+
+                        List<Attachment> col = new List<Attachment>();
+
                         if (json["value"]["attachments"] != null)
                         {
                             if (json["value"]["attachments"]["data"].Count() > 0)
-                            {                                
-                                AttachmentColl attachments = JsonConvert.DeserializeObject<AttachmentColl>(json["value"]["attachments"].ToString());
-                                model.entry[0].Post.attachments = attachments;
+                            {
+                                string val = json["value"]["attachments"]["data"][0]["type"].ToString();
+
+
+                                if (json["value"]["attachments"]["data"][0]["subattachments"] == null && val == "photo") // Single photo within this attachment
+                                {
+
+                                    Attachment file = new Attachment();
+                                    file.description = json["value"]["attachments"]["data"][0]["description"].ToString();
+                                    file.src = json["value"]["attachments"]["data"][0]["media"]["image"]["src"].ToString();
+                                    file.type = json["value"]["attachments"]["data"][0]["type"].ToString();
+                                    file.url = json["value"]["attachments"]["data"][0]["url"].ToString();
+                                    col.Add(file);
+
+
+                                }
+                                else if(val == "file_upload") // single photo uploaded as attachment
+                                {
+                                    Attachment file = new Attachment();
+                                    file.src = json["value"]["attachments"]["data"][0]["media"]["image"]["src"].ToString();
+                                    file.type = json["value"]["attachments"]["data"][0]["type"].ToString();
+                                    file.url = json["value"]["attachments"]["data"][0]["url"].ToString();
+                                    file.title = json["value"]["attachments"]["data"][0]["title"].ToString();
+                                    col.Add(file);
+                                }
+                                else if (val == "album") // multiple photo's within this attachment
+                                {
+                                    
+                                    int counter = counter = json["value"]["attachments"]["data"][0]["subattachments"]["data"].Count();
+                                    for (int i = 0; i < counter; i++)
+                                    {
+                                        Attachment file = new Attachment();
+                                        file.src = json["value"]["attachments"]["data"][0]["subattachments"]["data"][i]["media"]["image"]["src"].ToString();
+                                        file.type = json["value"]["attachments"]["data"][0]["subattachments"]["data"][i]["type"].ToString();
+                                        file.url = json["value"]["attachments"]["data"][0]["subattachments"]["data"][i]["url"].ToString();
+                                        col.Add(file);
+                                    }
+                                                                     
+                                }
+                               // AttachmentColl attachments = JsonConvert.DeserializeObject<AttachmentColl>(json["value"]["attachments"].ToString());
+                               // model.entry[0].attachments = attachments;
                             }
                         }
+
+                        if(col.Count>0)
+                            model.entry[0].attachments = col;
 
                         //  Trace.TraceInformation("Attachments : " + model.entry[0].Post.attachments.data.Count().ToString());
 
                         // Add to node if it is add operation (posting, commenting)
                         if (post.verb == "add")
                             CreateXMLNode(model);
+
+                        
 
                     }
 
@@ -175,6 +215,7 @@ namespace MessengerBot.Controllers
                         Trace.TraceInformation("Group Post-field : " + model.entry[0].field);
 
                         Message msg = JsonConvert.DeserializeObject<Message>(json["value"].ToString());
+                        model.entry[0].Message = msg;
 
                         try
                         {
@@ -235,7 +276,8 @@ namespace MessengerBot.Controllers
 
                 // AddToXMLFile(doc);
 
-                Trace.TraceInformation("** Transaction end **");
+                Exit:
+                    Trace.TraceInformation("** Transaction end **");
             }
             catch (Exception ex) {
 
