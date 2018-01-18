@@ -20,19 +20,21 @@ using System.IO;
 
 namespace MessengerBot.Controllers
 {
-	public class WebhookController : ApiController
-	{
-      
+    public class WebhookController : ApiController
+    {
+        string app_ID = ConfigurationManager.AppSettings["app_ID"];
+        string appSecret = ConfigurationManager.AppSettings["appSecret"];
+        string pageToken = ConfigurationManager.AppSettings["pageToken"];
         // CIBC Real Time Monitoring App at cibctest.facebook.com
         //string app_ID = "150764529042457";
         //string appSecret = "c237e4905e1785299e4f22cdedcab84f";
-        //string pageToken = "DQVJ0UUUwY2RIMG5ldVlaaE1mUzdRd25UaEl0OG9ETkpmU3RaNkZACSjAzMmluaWk0aE1ka3JqVHM2dHduN2ItQTlBcHhNZAjRDajAzeThsMnZAJdHB6V1d0aFdVQkxZAczFMT2pXUEctVHBWT3lJRzVDTHMwamdHYjhiSGZApMmhBTlNRS1g5ZAUZAaX0NFdG5JRzlwRVlDX2Q1NWdnajF4Y1BlVldidUdydmw1dHZAKN2NybGhZAdU83VElNaHdVRDNNU01zTExsNnE3ZAlA1LWszUG9LSQZDZD";
+        //string pageToken = "DQVJzNEx1bnNheV9JaFNKNTdEMzRYbnZAjQkxEZAnIybkxIVHNrNTdOVnpNRFkxRUdKUC1RRjdSYktNaDZA5bFBQRUlGaWNneG9LS0VGc05vRmQtUDNQanM3MVZAqSktRSS0tZA3NxUk1hZAGVVLVBiWk9MNzlMQWplYjRlem9DcUhaSVBBWTZAOaW9uR3JaQ1RacVZASTTdEUU5rNUFTTzN6aF9lWTE0X3owU0JDeVlseU8zTzUyc1AxWlFvTC1lbnZAWNUVQNjB0dmNLa2N5VzdNV0JCUwZDZD";
 
         // CIBC Real Time Monitoring App at cibc.facebook.com
-        string pageToken = "DQVJ0RkRBS05XQlhHbXFzd0dVSjZAIYjlhcEl4VEx0emlfUHN3YWZAvS3pBdHNkTTBISE0yeXlveFFJWjdlbVE0Mk9GZAFZAPdDhUS3RlU2FaZA0xSbWlUZA3MxTVBReXNkRThQV3MxX1R0NWRRdWoycVd5OVBUWGtFWWJESlJRRFowUGxVOWFuU05LT0k4bkU3ZAFlfSWhXVGlwSi03N3NRY3BpdkkxTDJWN3JIWXU0WlJrY09COU5NUFZA2WVh3eG5iRF9rTG03ZATU1dFB6VVNYNHdqXwZDZD";
-        string appSecret = "016aedf91eb245872fa87648da4b7b14";
-        string appI = "309396526132314";
-	
+        //string pageToken = "DQVJ0RkRBS05XQlhHbXFzd0dVSjZAIYjlhcEl4VEx0emlfUHN3YWZAvS3pBdHNkTTBISE0yeXlveFFJWjdlbVE0Mk9GZAFZAPdDhUS3RlU2FaZA0xSbWlUZA3MxTVBReXNkRThQV3MxX1R0NWRRdWoycVd5OVBUWGtFWWJESlJRRFowUGxVOWFuU05LT0k4bkU3ZAFlfSWhXVGlwSi03N3NRY3BpdkkxTDJWN3JIWXU0WlJrY09COU5NUFZA2WVh3eG5iRF9rTG03ZATU1dFB6VVNYNHdqXwZDZD";
+        //string appSecret = "016aedf91eb245872fa87648da4b7b14";
+        //string appI = "309396526132314";
+
         string wpFilesName = "WorkplaceFiles";
         string wpPostsFileName = "WorkplacePosts";
         string wpFilteredPostsFileName = "WorkplacePostsFiltered";
@@ -43,30 +45,30 @@ namespace MessengerBot.Controllers
 
 
         public HttpResponseMessage Get()
-		{
-			var querystrings = Request.GetQueryNameValuePairs().ToDictionary(x => x.Key, x => x.Value);
-			if (querystrings["hub.verify_token"] == "hello")
-			{
-				return new HttpResponseMessage(HttpStatusCode.OK)
-				{
-					Content = new StringContent(querystrings["hub.challenge"], Encoding.UTF8, "text/plain")
-				};
-			}
-			return new HttpResponseMessage(HttpStatusCode.Unauthorized);
-		}
+        {
+            var querystrings = Request.GetQueryNameValuePairs().ToDictionary(x => x.Key, x => x.Value);
+            if (querystrings["hub.verify_token"] == "hello")
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(querystrings["hub.challenge"], Encoding.UTF8, "text/plain")
+                };
+            }
+            return new HttpResponseMessage(HttpStatusCode.Unauthorized);
+        }
 
-		[HttpPost]
-		public async Task<HttpResponseMessage> Post()
-		{
-			var signature = Request.Headers.GetValues("X-Hub-Signature").FirstOrDefault().Replace("sha1=", "");
-			var body = await Request.Content.ReadAsStringAsync();
-			if (!VerifySignature(signature, body))
-				return new HttpResponseMessage(HttpStatusCode.BadRequest);
+        [HttpPost]
+        public async Task<HttpResponseMessage> Post()
+        {
+            var signature = Request.Headers.GetValues("X-Hub-Signature").FirstOrDefault().Replace("sha1=", "");
+            var body = await Request.Content.ReadAsStringAsync();
+            if (!VerifySignature(signature, body))
+                return new HttpResponseMessage(HttpStatusCode.BadRequest);
 
             AddingNodeToXmlFile(body);
 
-           // foreach (var item in value.entry[0].messaging)
-           //{
+            // foreach (var item in value.entry[0].messaging)
+            //{
 
             // if (item.message == null && item.postback == null)
             //	continue;
@@ -75,48 +77,48 @@ namespace MessengerBot.Controllers
             //}
 
             return new HttpResponseMessage(HttpStatusCode.OK);
-		}
+        }
 
-		private bool VerifySignature(string signature, string body)
-		{          
+        private bool VerifySignature(string signature, string body)
+        {
             var hashString = new StringBuilder();
-			using (var crypto = new HMACSHA1(Encoding.UTF8.GetBytes(appSecret)))
-			{
-				var hash = crypto.ComputeHash(Encoding.UTF8.GetBytes(body));
-				foreach (var item in hash)
-					hashString.Append(item.ToString("X2"));
-			}
-            
+            using (var crypto = new HMACSHA1(Encoding.UTF8.GetBytes(appSecret)))
+            {
+                var hash = crypto.ComputeHash(Encoding.UTF8.GetBytes(body));
+                foreach (var item in hash)
+                    hashString.Append(item.ToString("X2"));
+            }
+
             return hashString.ToString().ToLower() == signature.ToLower();
-		}
+        }
 
-		/// <summary>
-		/// get text message template
-		/// </summary>
-		/// <param name="text">text</param>
-		/// <param name="sender">sender id</param>
-		/// <returns>json</returns>
-		private JObject GetMessageTemplate(string text, string sender)
-		{
-			return JObject.FromObject(new
-			{
-				recipient = new { id = sender },
-				message = new { text = text }
-			});
-		}
+        /// <summary>
+        /// get text message template
+        /// </summary>
+        /// <param name="text">text</param>
+        /// <param name="sender">sender id</param>
+        /// <returns>json</returns>
+        private JObject GetMessageTemplate(string text, string sender)
+        {
+            return JObject.FromObject(new
+            {
+                recipient = new { id = sender },
+                message = new { text = text }
+            });
+        }
 
-		/// <summary>
-		/// send message
-		/// </summary>
-		/// <param name="json">json</param>
-		private async Task SendMessage(JObject json)
-		{
-			using (HttpClient client = new HttpClient())
-			{
-				client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-				HttpResponseMessage res = await client.PostAsync($"https://graph.facebook.com/v2.6/me/messages?access_token={pageToken}", new StringContent(json.ToString(), Encoding.UTF8, "application/json"));
-			}
-		}
+        /// <summary>
+        /// send message
+        /// </summary>
+        /// <param name="json">json</param>
+        private async Task SendMessage(JObject json)
+        {
+            using (HttpClient client = new HttpClient())
+            {
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                HttpResponseMessage res = await client.PostAsync($"https://graph.facebook.com/v2.6/me/messages?access_token={pageToken}", new StringContent(json.ToString(), Encoding.UTF8, "application/json"));
+            }
+        }
 
         #region "Private functions"
 
@@ -128,13 +130,14 @@ namespace MessengerBot.Controllers
 
                 var value = JsonConvert.DeserializeObject<WebhookModel>(body);
                 WebhookModel model = JsonConvert.DeserializeObject<WebhookModel>(body);
-                
+
                 model.entry[0].id = value.entry[0].id;
                 model.entry[0].uid = value.entry[0].uid;
                 model.entry[0].time = value.entry[0].time;
 
-                var json = (JToken.Parse(body))["entry"][0]["changes"][0];               
+                var json = (JToken.Parse(body))["entry"][0]["changes"][0];
                 model.entry[0].field = json["field"].ToString();
+               
 
                 if (model._object == "group")
                 {
@@ -145,11 +148,20 @@ namespace MessengerBot.Controllers
                         Post post = JsonConvert.DeserializeObject<Post>(json["value"].ToString());
                         model.entry[0].Post = post;
 
-                        Trace.TraceInformation("Attachments : " + model.entry[0].Post.attachments.data.Count().ToString());
+                        if (json["value"]["attachments"] != null)
+                        {
+                            if (json["value"]["attachments"]["data"].Count() > 0)
+                            {                                
+                                AttachmentColl attachments = JsonConvert.DeserializeObject<AttachmentColl>(json["value"]["attachments"].ToString());
+                                model.entry[0].Post.attachments = attachments;
+                            }
+                        }
+
+                        //  Trace.TraceInformation("Attachments : " + model.entry[0].Post.attachments.data.Count().ToString());
 
                         // Add to node if it is add operation (posting, commenting)
-                        if (post.verb == "add") 
-                            CreateXMLNode(model);                                     
+                        if (post.verb == "add")
+                            CreateXMLNode(model);
 
                     }
 
@@ -169,7 +181,7 @@ namespace MessengerBot.Controllers
                             model.entry[0].Message = msg;
                         }
                         catch (Exception ex) { Trace.TraceError(ex.ToString()); }
-                     
+
                     }
                 }
 
@@ -225,7 +237,9 @@ namespace MessengerBot.Controllers
 
                 Trace.TraceInformation("** Transaction end **");
             }
-            catch(Exception ex) { }
+            catch (Exception ex) {
+
+            }
         }
 
         /// <summary>
@@ -263,7 +277,7 @@ namespace MessengerBot.Controllers
             //string postDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigurationManager.AppSettings["WORKPLACEPOSTFILE"]);
             //string chatDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigurationManager.AppSettings["WORKPLACECHATFILE"]);
 
-          
+
             //if (!Directory.Exists(postDirectory))
             //{
             //    Trace.TraceInformation("Creating directory " + postDirectory);
@@ -290,7 +304,7 @@ namespace MessengerBot.Controllers
 
                         filePath = AppDomain.CurrentDomain.BaseDirectory + "/" + ConfigurationManager.AppSettings["WORKPLACEPOSTFILE"] + "/" + wpPostsFileName + "_" + DateTime.Today.ToString("MMddyyyy") + ".txt";
                         filteredfilePath = AppDomain.CurrentDomain.BaseDirectory + "/" + ConfigurationManager.AppSettings["WORKPLACEPOSTFILE"] + "/" + wpFilteredPostsFileName + "_" + DateTime.Today.ToString("MMddyyyy") + ".txt";
-                       
+
                         string groupID = model.entry[0].Post.post_id.Split("_".ToCharArray())[0];
                         string postID = model.entry[0].Post.post_id.Split("_".ToCharArray())[1];
                         string postedDate = model.entry[0].Post.created_time;
@@ -316,7 +330,7 @@ namespace MessengerBot.Controllers
                 //Trace.TraceInformation("XML: " + xmlLog);
                 //Trace.TraceInformation("App path: " + AppDomain.CurrentDomain.BaseDirectory);
 
-               
+
 
                 // Create a file if its not exist
                 if (!File.Exists(filePath))
