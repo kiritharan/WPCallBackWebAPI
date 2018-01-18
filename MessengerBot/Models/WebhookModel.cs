@@ -51,9 +51,22 @@ namespace MessengerBot.Models
         public string id { get; set; }
         public string mime_type { get; set; }
         public string name { get; set; }
-       
-    }
+        public ImageData image_data { get; set; }
 
+    }
+    public class ImageData
+    {
+        public string url { get; set; }
+        public string preview { get; set; }
+        public string raw_gif_image { get; set; }
+
+        public string preview_url { get; set; }
+
+        public string animated_gif_preview_url { get; set; }
+
+        public string animated_gif_url { get; set; }
+
+    }
     public class MessageAttachment
     {
         public List<Attachment> data { get; set; }
