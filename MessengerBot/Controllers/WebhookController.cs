@@ -27,12 +27,13 @@ namespace MessengerBot.Controllers
         string pageToken = ConfigurationManager.AppSettings["pageToken"];
 
 
-        string wpFilesName = "WorkplaceFiles";
-        string wpPostsFileName = "WorkplacePosts";
-        string wpFilteredPostsFileName = "WorkplacePostsFiltered";
+        string wpPostsFilesName = "WorkplacePosts_";
+        string wpPostsFilteredFileName = "WorkplacePostsFiltered_";
+        string wpPostsAttachmentFileName = "WorkplaceFiles_";
 
-        string wpChatFileName = "WorkChatConversations";
-        string wpFilteredChatFileName = "WorkChatConversationsFiltered";
+        string wpChatFileName = "WorkChatConversations_";
+        string wpChatFilteredFileName = "WorkChatConversationsFiltered_";
+        string wpChatAttachmentFileName = "WorkChatFiles_";
 
 
 
@@ -58,15 +59,7 @@ namespace MessengerBot.Controllers
                 return new HttpResponseMessage(HttpStatusCode.BadRequest);
 
             AddingNodeToXmlFile(body);
-
-            // foreach (var item in value.entry[0].messaging)
-            //{
-
-            // if (item.message == null && item.postback == null)
-            //	continue;
-            //else
-            //	await SendMessage(GetMessageTemplate(item.message.text, item.sender.id));
-            //}
+        
 
             return new HttpResponseMessage(HttpStatusCode.OK);
         }
@@ -237,62 +230,55 @@ namespace MessengerBot.Controllers
 
             }
         }
-
-        /// <summary>
-        /// This method will check file existense, such as if a file is already created and exists for today ignore creating a new file otherwise create a new file.
-        /// </summary>
-        private XmlDocument CheckForFile()
+      
+        private void CreatingDirectories()
         {
-            //XML for filtered chat conversations
-            XmlDocument docFiltered = new XmlDocument();
-            XmlDeclaration xDeclareFiltered = docFiltered.CreateXmlDeclaration("1.0", "UTF-8", null);
-            XmlElement documentRootFiltered = docFiltered.DocumentElement;
-            docFiltered.InsertBefore(xDeclareFiltered, documentRootFiltered);
-            XmlElement filteredUsersElement = (XmlElement)docFiltered.AppendChild(docFiltered.CreateElement("Users"));
+            try
+            {
+                string DATE = DateTime.Today.ToString("MMddyyyy");
+                string WPGROUPPOSTS = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigurationManager.AppSettings["WPGROUPPOSTS"], DATE);
+                string WPCHAT = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigurationManager.AppSettings["WPCHAT"], DATE);
+                
+                if (!Directory.Exists(WPGROUPPOSTS))
+                {
+                    Trace.TraceInformation("Creating directory " + WPGROUPPOSTS);
+                    Directory.CreateDirectory(WPGROUPPOSTS);
+                }
 
-            //XML for unfiltered chat conversations
-            XmlDocument doc = new XmlDocument();
-            XmlDeclaration xDeclare = doc.CreateXmlDeclaration("1.0", "UTF-8", null);
-            XmlElement documentRoot = doc.DocumentElement;
-            doc.InsertBefore(xDeclare, documentRoot);
-            XmlElement usersElement = (XmlElement)doc.AppendChild(doc.CreateElement("Users"));
+                if (!Directory.Exists(WPCHAT))
+                {
+                    Trace.TraceInformation("Creating directory " + WPCHAT);
+                    Directory.CreateDirectory(WPCHAT);
+                }
 
-            return doc;
+            }
+            catch(Exception ex) { }
         }
 
         private void CreateXMLNode(Models.WebhookModel model)
         {
             
 
-            Trace.TraceInformation("Creating a XML node with a message");
+            Trace.TraceInformation("Creating and adding XML node to text file...");
 
             string xmlPostNode = "<Posts GroupName='{0}' GroupID='{1}' PostID='{2}' PostedTime='{3}' PostedBy='{4}' Message='{5}' Link='{6}'/>";
-            string xmlMesssageAttachmentNode = "<Message MessageID='{0}' CreatedTime='{1}' Message='{2}' ><Participants Participants='{3}' />'{4}'</ Message >";
+            string xmlMesssageAttachmentNode = "<Message MessageID='{0}' CreatedTime='{1}' Message='{2}' ><Participants Participants='{3}' />{4}</ Message >";
             string xmlMessageAttachmentHolderNode = "<Attachment Attachment_ID='{0}' Attachment_mime_type='{1}' Attachment_Name='{2}' size='{3}' src='{4}' />";
             string xmlMessageNode = "<Message MessageID='{0}' CreatedTime='{1}' Message='{2}' ><Participants Participants='{3}' ></ Message>";
             
-                   string filePath = string.Empty;
-            string filteredfilePath = string.Empty;
+            string filePath = string.Empty;
+            string filteredFilePath = string.Empty;
+            string attachFfilePath = string.Empty;
             string xmlLog = string.Empty;
 
-            string postDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigurationManager.AppSettings["WORKPLACEPOSTFILE"]);
-            string chatDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigurationManager.AppSettings["WORKPLACECHATFILE"]);         
 
-            if (!Directory.Exists(postDirectory))
-            {
-                Trace.TraceInformation("Creating directory " + postDirectory);
-                Directory.CreateDirectory(postDirectory);
-            }
-            else
-                Trace.TraceInformation("Directory found: " + postDirectory);
+            CreatingDirectories();
 
-            if (!Directory.Exists(chatDirectory))
-            {
-                Trace.TraceInformation("Creating directory " + chatDirectory);
-                Directory.CreateDirectory(chatDirectory);
-            }
-            else
-                Trace.TraceInformation("Directory found: " + chatDirectory);
+            string DATE = DateTime.Today.ToString("MMddyyyy");
+            string postDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigurationManager.AppSettings["WPGROUPPOSTS"], DATE);
+            string chatDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigurationManager.AppSettings["WPCHAT"], DATE);
+
+
 
             try
             {
@@ -302,22 +288,28 @@ namespace MessengerBot.Controllers
                     case "posts":
                     case "comments":
 
-                        filePath = Path.Combine(postDirectory, wpPostsFileName + "_" + DateTime.Today.ToString("MMddyyyy") + ".txt");
-                        filteredfilePath = Path.Combine(postDirectory, wpFilteredPostsFileName + "_" + DateTime.Today.ToString("MMddyyyy") + ".txt");
-                       
+                        filePath = Path.Combine(postDirectory, wpPostsFilesName + "_" + DateTime.Today.ToString("MMddyyyy") + ".txt");
+                        filteredFilePath = Path.Combine(postDirectory, wpPostsFilteredFileName + "_" + DateTime.Today.ToString("MMddyyyy") + ".txt");
+                        attachFfilePath = Path.Combine(postDirectory, wpPostsAttachmentFileName + "_" + DateTime.Today.ToString("MMddyyyy") + ".txt");
+
                         string groupID = model.entry[0].Post.post_id.Split("_".ToCharArray())[0];
                         string postID = model.entry[0].Post.post_id.Split("_".ToCharArray())[1];
                         string postedDate = model.entry[0].Post.created_time;
                         string postedBy = model.entry[0].Post.from.name + "_" + model.entry[0].Post.from.id;
                         string message = model.entry[0].Post.message;
+
                         xmlLog = string.Format(xmlPostNode, string.Empty, groupID, postID, postedDate, postedBy, message, string.Empty);
 
                         break;
 
                     case "message_sends":
 
-                        filePath = AppDomain.CurrentDomain.BaseDirectory + "/" + ConfigurationManager.AppSettings["WORKPLACECHATFILE"] + "/" + wpChatFileName + "_" + DateTime.Today.ToString("MMddyyyy") + ".txt";
-                        filteredfilePath = AppDomain.CurrentDomain.BaseDirectory + "/" + ConfigurationManager.AppSettings["WORKPLACECHATFILE"] + "/" + wpFilteredChatFileName + "_" + DateTime.Today.ToString("MMddyyyy") + ".txt";
+                        filePath = Path.Combine(chatDirectory, wpChatFileName + "_" + DateTime.Today.ToString("MMddyyyy") + ".txt");
+                        filteredFilePath = Path.Combine(chatDirectory, wpChatFilteredFileName + "_" + DateTime.Today.ToString("MMddyyyy") + ".txt");
+                        attachFfilePath = Path.Combine(chatDirectory, wpChatAttachmentFileName + "_" + DateTime.Today.ToString("MMddyyyy") + ".txt");
+
+                        //filePath = AppDomain.CurrentDomain.BaseDirectory + "/" + ConfigurationManager.AppSettings["WORKPLACECHATFILE"] + "/" + wpChatFileName + "_" + DateTime.Today.ToString("MMddyyyy") + ".txt";
+                        //filteredfilePath = AppDomain.CurrentDomain.BaseDirectory + "/" + ConfigurationManager.AppSettings["WORKPLACECHATFILE"] + "/" + wpFilteredChatFileName + "_" + DateTime.Today.ToString("MMddyyyy") + ".txt";
                         
                         string user = model.entry[0].Message.from.name + "(" + model.entry[0].Message.from.id + ")";
                         string msg = model.entry[0].Message.message;
@@ -335,8 +327,7 @@ namespace MessengerBot.Controllers
                             if (model.entry[0].Message.attachments.data.Count > 0)
                             {
                                 for (int i = 0; i < model.entry[0].Message.attachments.data.Count; i++)
-                                {
-                                    // "<Attachment Attachment_ID='{0}' Attachment_mime_type='{1}' Attachment_Name='{2}' size='{3}' src={4} >"
+                                {                                    
                                     xmlMessageAttachmentHolderNode = string.Format(xmlMessageAttachmentHolderNode,
                                         model.entry[0].Message.attachments.data[i].id, 
                                         model.entry[0].Message.attachments.data[i].mime_type, 
@@ -345,11 +336,11 @@ namespace MessengerBot.Controllers
                                         model.entry[0].Message.attachments.data[i].image_data.preview_url);
                                     Trace.TraceInformation("xmlMessageAttachmentHolderNode : " + xmlMessageAttachmentHolderNode);
                                 }
-
-                                // "<Message MessageID='{0}' CreatedTime='{1}' Message='{2}' ><Participants Participants={3} />{4}</ Message >";
+                                
                                 xmlLog = string.Format(xmlMesssageAttachmentNode, 
                                     id, 
-                                    createdTme, 
+                                    createdTme,
+                                    msg,
                                     participants, 
                                     xmlMessageAttachmentHolderNode);
                                 Trace.TraceInformation("xmlLog : " + xmlLog);
@@ -362,6 +353,14 @@ namespace MessengerBot.Controllers
 
                 }
 
+
+                //string wpPostsFilesName = "WorkplacePosts_";
+                //string wpPostsFilteredFileName = "WorkplacePostsFiltered_";
+                //string wpPostsAttachmentFileName = "WorkplaceFiles_";
+
+                //string wpChatFileName = "WorkChatConversations_";
+                //string wpChatFilteredFileName = "WorkChatConversationsFiltered_";
+                //string wpChatAttachmentFileName = "WorkChatFiles_";
 
                 // Create a file if its not exist
                 if (!File.Exists(filePath))
