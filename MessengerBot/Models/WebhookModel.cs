@@ -18,11 +18,11 @@ namespace MessengerBot.Models
         public long time { get; set; }
         public string uid { get; set; }
         public Message Message { get; set; }
-        public Post Post { get; set; }      
+        public Post Post { get; set; }
         public List<Attachment> attachments { get; set; }
     }
 
- 
+
     public class Post
     {
         public Post() { }
@@ -33,13 +33,13 @@ namespace MessengerBot.Models
         public string verb { get; set; }
         public string created_time { get; set; }
         public string message { get; set; }
-        public string permalink_url { get; set; }       
-        
+        public string permalink_url { get; set; }
+
     }
 
     public class Attachment
     {
-        public string description { get; set; }       
+        public string description { get; set; }
         public string type { get; set; }
         public string url { get; set; }
         public string src { get; set; }
