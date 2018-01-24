@@ -1,0 +1,131 @@
+﻿\bAffirmative action\b
+\bAgeist\b
+\bAgeism\b
+\bAggressive\b
+\bagression\b
+\ballegations\b
+\ballégations\b
+\bambassador\b
+\bAngry\b
+\bAntitrust\b
+\bArrested\b
+\bassault\b
+\basshole\b
+\bbetray\b
+\bblesser\b
+\bBreach\b
+\bbully\b
+\bbullied\b
+\bcode de conduite\b
+\bcode of conduct\b
+\bComplaint\b
+\bcomportement\b
+\bcongédiement\b
+\bConvict\b
+\bConviction\b
+\bCorrupt\b
+\bcut back\b
+\bcutback\b
+\bdamage\b
+\bdisabilities\b
+\bdisability\b
+\bDiscriminate\b
+\bdiscrimination\b
+\bDismiss\b
+\bdoesn't care\b
+\bdommage\b
+\beliminated\b
+\beliminate\b
+\benquête\b
+\bentrevue\b
+\bequity markets\b
+\bEthic\b
+\bêtre blessé\b
+\bfire\b
+\bFired\b
+\bfiring\b
+\bForced return\b
+\bFraud\b
+\bfuck\b
+\bgender\b
+\bgenre\b
+\bGrievance\b
+\bgroped\b
+\bharass\b
+\bharcèlement\b
+\bhate\b
+\bhonte\b
+\bhurt\b
+\bidiot\b
+\bIllegal\b
+\bInappropriate\b
+\bindia\b
+\binnuendo\b
+\bintimidate\b
+\bintimidated\b
+\bintimidation\b
+\binvestigation\b
+\bjob cut\b
+\bjob cuts\b
+\bjob loss\b
+\bjobcut\b
+\bjobcuts\b
+\blaid off\b
+\blaidoff\b
+\blawsuit\b
+\bLay off\b
+\bLay offs\b
+\bLay-off\b
+\blayoff\b
+\blay-offs\b
+\bmarchés des actions\b
+\bmenac\b
+\bmilieu de travail\b
+\bmisbehavior\b
+\bmisbehaviour\b
+\bMoonlight\b
+\bmoving jobs\b
+\bmoving work\b
+\bnewspaper\b
+\bNot paid\b
+\bOmbudsman\b
+\bout of work\b
+\bout source\b
+\bout sourced\b
+\bout sourcing\b
+\boutsource\b
+\boutsourced\b
+\bOver time\b
+\bOvertime\b
+\bpackaged out\b
+\bpackage out\b
+\bPaid too much\b
+\bPIPEDA\b
+\bpoursuite\b
+\bRacist\b
+\bRacism\b
+\bRegulatory\b
+\bReligion\b
+\brenvoi\b
+\bressentir\b
+\bRestraining order\b
+\brestructur\b
+\bsalle des marchés\b
+\bse sentir\b
+\bsentiment\b
+\bsex\b
+\bshame\b
+\bshit\b
+\bsnak\b
+\bsous-entendu\b
+\bsuck\b
+\btermination\b
+\bthreat\b
+\btouché\b
+\btoxic\b
+\btoxique\b
+\btrading\b
+\bwork environment\b
+\bworkless\b
+\bwrongful-dismissal\b
+\bconfidential\b
