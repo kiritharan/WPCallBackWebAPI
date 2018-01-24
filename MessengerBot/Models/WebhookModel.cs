@@ -34,11 +34,34 @@ namespace MessengerBot.Models
         public string created_time { get; set; }
         public string message { get; set; }
         public string permalink_url { get; set; }
+      //  public List<Attachment> attachments { get; set; }
+
+       
+
+        //public class Postsubattachments
+        //{
+        //    public List<Attachment> data { get; set; }
+        //}
 
     }
 
-    public class Attachment
+    //public PostAttachment attachments { get; set; }
+
+    public class PostAttachment
     {
+        public List<Attachment> data { get; set; }
+    }
+
+    public class Attachment
+    {      
+        public Attachment(string src, string type, string url)
+        {
+           
+            this.type = type;
+            this.url = url;
+            this.src = src;
+        }
+
         public string description { get; set; }
         public string type { get; set; }
         public string url { get; set; }
@@ -53,17 +76,15 @@ namespace MessengerBot.Models
         public string name { get; set; }
         public ImageData image_data { get; set; }
 
+      
     }
     public class ImageData
     {
         public string url { get; set; }
         public string preview { get; set; }
         public string raw_gif_image { get; set; }
-
         public string preview_url { get; set; }
-
         public string animated_gif_preview_url { get; set; }
-
         public string animated_gif_url { get; set; }
 
     }
@@ -84,11 +105,8 @@ namespace MessengerBot.Models
     public class User
     {
         public string email { get; set; }
-
         public string name { get; set; }
-
         public Community community { get; set; }
-
         public string id { get; set; }
 
     }
