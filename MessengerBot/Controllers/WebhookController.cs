@@ -122,7 +122,7 @@ namespace MessengerBot.Controllers
         {
             try
             {
-                Trace.TraceInformation("Transaction start **" + body);
+                Trace.TraceInformation("Transaction start **");// + body);
 
                 var value = JsonConvert.DeserializeObject<WebhookModel>(body);
                 WebhookModel model = JsonConvert.DeserializeObject<WebhookModel>(body);
@@ -279,9 +279,9 @@ namespace MessengerBot.Controllers
                 string PARAMETERSFILENAME = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigurationManager.AppSettings["PARAMETERSFILENAME"]);
                 string BADWORDKEYFILENAME = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigurationManager.AppSettings["BADWORDSFILENAME"]);
 
-                Trace.TraceInformation("REGEXFORMATFILENAME : " + REGEXFORMATFILENAME);
-                Trace.TraceInformation("PARAMETERSFILENAME : " + PARAMETERSFILENAME);
-                Trace.TraceInformation("BADWORDKEYFILENAME : " + BADWORDKEYFILENAME);
+                //Trace.TraceInformation("REGEXFORMATFILENAME : " + REGEXFORMATFILENAME);
+                //Trace.TraceInformation("PARAMETERSFILENAME : " + PARAMETERSFILENAME);
+                //Trace.TraceInformation("BADWORDKEYFILENAME : " + BADWORDKEYFILENAME);
 
                 
                 string REGEXSTRING = string.Empty;
@@ -293,6 +293,11 @@ namespace MessengerBot.Controllers
                 ObjectCache cache = MemoryCache.Default;              
                 CacheItemPolicy cacheItemPolicy = new CacheItemPolicy();
                 cacheItemPolicy.AbsoluteExpiration = new DateTime(DateTime.Today.Year, DateTime.Today.Month, DateTime.Today.Day, 23, 59, 59);
+                foreach (var item in MemoryCache.Default) 
+                {
+                    Trace.TraceInformation("ObjectCache: " + item.Key + " val: " + item.Value);
+                }
+                
 
                 // Reading regex formats
                 if (!cache.Contains(cacheFormatKey))
@@ -309,16 +314,19 @@ namespace MessengerBot.Controllers
                         }
 
                         REGEXSTRING = REGEXSTRING.Substring(0, REGEXSTRING.Length - 1);
-
+                        Trace.TraceInformation("REGEXSTRING 1: " + REGEXSTRING);
                         cache.Add(cacheFormatKey, REGEXSTRING, cacheItemPolicy);
 
                     }
                 }
                 else
+                {
                     REGEXSTRING = cache[cacheFormatKey].ToString();
+                    Trace.TraceInformation("REGEXSTRING 2: " + REGEXSTRING);
+                }
 
                 // Reading card type informaion
-                if(!cache.Contains(cacheCardInfoKey))
+                if (!cache.Contains(cacheCardInfoKey))
                 {
 
                     CardTypeInfo = new List<CardTypeInfo>();
@@ -329,12 +337,15 @@ namespace MessengerBot.Controllers
                         {
                             CardTypeInfo.Add(new MessengerBot.Controllers.CardTypeInfo(txt.ReadLine().Split(';')[1].Trim()));
                         }
-
+                        Trace.TraceInformation("REGEXARRAY 1: " + CardTypeInfo[0].RegEx);
                         cache.Add(cacheCardInfoKey, CardTypeInfo, cacheItemPolicy);
                     }
                 }
                 else
+                {
                     REGEXARRAY = (ArrayList)cache[cacheCardInfoKey];
+                    Trace.TraceInformation("REGEXARRAY 2: " + CardTypeInfo[0].RegEx);
+                }
 
                 // Reading bad words 
                 if (!cache.Contains(cacheBadWordsKey))
@@ -350,10 +361,14 @@ namespace MessengerBot.Controllers
                         }
 
                         cache.Add(cacheBadWordsKey, BADWORDKEYSTRING, cacheItemPolicy);
+                        Trace.TraceInformation("BADWORDKEYSTRING 1: " + BADWORDKEYSTRING);
                     }
                 }
                 else
+                {
                     BADWORDKEYSTRING = cache[cacheBadWordsKey].ToString();
+                    Trace.TraceInformation("BADWORDKEYSTRING 2: " + BADWORDKEYSTRING);
+                }
 
 
                 return new Validation(REGEXSTRING, REGEXARRAY, CardTypeInfo);
@@ -482,7 +497,9 @@ namespace MessengerBot.Controllers
 
 
                         matchedWords = FindingBad(message);
-                        xmlFilteredPostNode = string.Format(xmlFilteredPostNode, "", groupID, postID, postedDate, postedBy, message, matchedWords);
+                        Trace.TraceInformation("matchedWords 1: " + matchedWords);
+                        if (matchedWords !="")
+                            xmlFilteredPostNode = string.Format(xmlFilteredPostNode, "", groupID, postID, postedDate, postedBy, message, matchedWords);
 
                         break;
 
@@ -534,7 +551,9 @@ namespace MessengerBot.Controllers
                             xmlLog = string.Format(xmlMessageNode, id, createdTme, message, participants);
 
                         matchedWords = FindingBad(message);
-                        xmlFilteredMessageNode = string.Format(xmlFilteredMessageNode, id, createdTme, message, matchedWords, participants);
+                        Trace.TraceInformation("matchedWords 2!: " + matchedWords);
+                        if (matchedWords != "")
+                            xmlFilteredMessageNode = string.Format(xmlFilteredMessageNode, id, createdTme, message, matchedWords, participants);
 
                         break;
                 }
