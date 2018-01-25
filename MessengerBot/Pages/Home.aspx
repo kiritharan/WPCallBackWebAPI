@@ -1,4 +1,4 @@
-﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="Home.aspx.cs" Inherits="MessengerBot.Pages.Hello" %>
+<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="Home.aspx.cs" Inherits="MessengerBot.Pages.Hello" %>
 
 <!DOCTYPE html>
 
@@ -11,6 +11,9 @@
     <div>
         Wlecome to Messanger Bot
     </div>
+        <div>
+            <asp:Button ID="cleanCache" runat="server" Text="Clean Cache" OnClick="cleanCache_Click" />
+        </div>
     </form>
 </body>
 </html>
