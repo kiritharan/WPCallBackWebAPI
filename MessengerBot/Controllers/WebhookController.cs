@@ -43,6 +43,7 @@ namespace MessengerBot.Controllers
         private const string cacheFormatKey = "CacheKey_RegexFormat";
         private const string cacheCardInfoKey = "CacheKey_RegexCardInfo";
         private const string cacheBadWordsKey = "CacheKey_RegexBadWords";
+        private const string cacheValidationObjKey = "CacheKey_Validation";
 
         public HttpResponseMessage Get()
         {
@@ -66,7 +67,7 @@ namespace MessengerBot.Controllers
                 return new HttpResponseMessage(HttpStatusCode.BadRequest);
 
             AddingNodeToXmlFile(body);
-        
+
 
             return new HttpResponseMessage(HttpStatusCode.OK);
         }
@@ -126,25 +127,25 @@ namespace MessengerBot.Controllers
 
                 var value = JsonConvert.DeserializeObject<WebhookModel>(body);
                 WebhookModel model = JsonConvert.DeserializeObject<WebhookModel>(body);
-                 model.entry[0].id = value.entry[0].id;
+                model.entry[0].id = value.entry[0].id;
                 model.entry[0].uid = value.entry[0].uid;
                 model.entry[0].time = value.entry[0].time;
 
                 var json = (JToken.Parse(body))["entry"][0]["changes"][0];
-                model.entry[0].field = json["field"].ToString();                
+                model.entry[0].field = json["field"].ToString();
 
                 // Thsi is from Workplace group
                 if (model._object == "group")
-                { 
+                {
                     if ((model.entry[0].field == "posts") || (model.entry[0].field == "comments"))
-                    {                       
+                    {
                         Post post = JsonConvert.DeserializeObject<Post>(json["value"].ToString());
                         post.type = model.entry[0].field;
                         model.entry[0].Post = post;
-                     
+
                         if (post.verb == "delete")
                             goto Exit;
-                        
+
                         List<Attachment> col = new List<Attachment>();
                         if (json["value"]["attachments"] != null)
                         {
@@ -159,11 +160,11 @@ namespace MessengerBot.Controllers
                                             json["value"]["attachments"]["data"][0]["media"]["image"]["src"].ToString(),
                                             json["value"]["attachments"]["data"][0]["type"].ToString(),
                                             json["value"]["attachments"]["data"][0]["url"].ToString()
-                                        );                                    
-                                   
+                                        );
+
                                     // Single photo within this attachment OR Attachment created as a photo album
-                                    if (json["value"]["attachments"]["data"][0]["subattachments"] == null && val == "photo")                                  
-                                        file.description = json["value"]["attachments"]["data"][0]["description"].ToString();                                  
+                                    if (json["value"]["attachments"]["data"][0]["subattachments"] == null && val == "photo")
+                                        file.description = json["value"]["attachments"]["data"][0]["description"].ToString();
                                     else
                                         // single photo uploaded as attachment
                                         file.title = json["value"]["attachments"]["data"][0]["title"].ToString();
@@ -187,7 +188,7 @@ namespace MessengerBot.Controllers
                                         col.Add(file);
                                     }
                                 }
-                                
+
                             }
                         }
 
@@ -197,7 +198,7 @@ namespace MessengerBot.Controllers
                             model.entry[0].attachments = col;
                             //model.entry[0].Post.attachments = col; 
                         }
-                       
+
                         // Add to node if it is add operation (posting, commenting)
                         if (post.verb == "add" || post.verb == "edit")
                             CreateXMLNode(model);
@@ -207,18 +208,13 @@ namespace MessengerBot.Controllers
                 // This is from Workplace chat 
                 else if (model._object == "user")
                 {
-                    Trace.TraceInformation("Object: " + model._object);
+                   // Trace.TraceInformation("Object: " + model._object);
 
                     if (model.entry[0].field == "message_sends")
                     {
-
                         Message msg = JsonConvert.DeserializeObject<Message>(json["value"].ToString());
                         model.entry[0].Message = msg;
 
-                     
-                           
-                            CreateXMLNode(model);
-                      
                     }
                     else if (model.entry[0].field == "status")
                     {
@@ -228,76 +224,84 @@ namespace MessengerBot.Controllers
                     }
 
                     CreateXMLNode(model);
-                }           
+                }
 
                 Exit:
-                    Trace.TraceInformation("** Transaction end **");
+                Trace.TraceInformation("** Transaction end **");
             }
             catch (Exception ex)
             {
 
             }
         }
-      
+
         private void CreatingDirectories()
         {
             try
             {
-                string DATE = DateTime.Today.ToString("MMddyyyy");
-                string WPGROUPPOSTS = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigurationManager.AppSettings["WPGROUPPOSTS"], DATE);
-                string WPCHAT = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigurationManager.AppSettings["WPCHAT"], DATE);
-                string WPFILES = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigurationManager.AppSettings["WPFILES"], DATE);
+                //string DATE = DateTime.Today.ToString("MMddyyyy");
+                //string WPGROUPPOSTS = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigurationManager.AppSettings["WPGROUPPOSTS"], DATE);
+                //string WPCHAT = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigurationManager.AppSettings["WPCHAT"], DATE);
+                //string WPFILES = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigurationManager.AppSettings["WPFILES"], DATE);
 
-                if (!Directory.Exists(WPGROUPPOSTS))
+                //if (!Directory.Exists(WPGROUPPOSTS))
+                //{
+                //    Trace.TraceInformation("Creating directory to store group posts " + WPGROUPPOSTS);
+                //    Directory.CreateDirectory(WPGROUPPOSTS);
+                //}
+
+                //if (!Directory.Exists(WPCHAT))
+                //{
+                //    Trace.TraceInformation("Creating directory to store chat messages " + WPCHAT);
+                //    Directory.CreateDirectory(WPCHAT);
+                //}
+
+                //if (!Directory.Exists(WPFILES))
+                //{
+                //    Trace.TraceInformation("Creating directory to store file informations " + WPFILES);
+                //    Directory.CreateDirectory(WPFILES);
+                //}
+
+                string WPXMLFOLDER = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigurationManager.AppSettings["WPXMLFOLDER"]);
+
+                if (!Directory.Exists(WPXMLFOLDER))
                 {
-                    Trace.TraceInformation("Creating directory to store group posts " + WPGROUPPOSTS);
-                    Directory.CreateDirectory(WPGROUPPOSTS);
+                    Trace.TraceInformation("Creating directory to store files.. ");
+                    Directory.CreateDirectory(WPXMLFOLDER);
                 }
-
-                if (!Directory.Exists(WPCHAT))
-                {
-                    Trace.TraceInformation("Creating directory to store chat messages " + WPCHAT);
-                    Directory.CreateDirectory(WPCHAT);
-                }
-
-                if (!Directory.Exists(WPFILES))
-                {
-                    Trace.TraceInformation("Creating directory to store file informations " + WPFILES);
-                    Directory.CreateDirectory(WPFILES);
-                }
-
             }
-            catch(Exception ex) { }
+            catch (Exception ex) { }
         }
 
         private Validation GetResourceValues()
         {
             try
-            {   
+            {
 
-                string REGEXFORMATFILENAME = Path.Combine(AppDomain.CurrentDomain.BaseDirectory,ConfigurationManager.AppSettings["REGEXFORMATFILENAME"]);
+                string REGEXFORMATFILENAME = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigurationManager.AppSettings["REGEXFORMATFILENAME"]);
                 string PARAMETERSFILENAME = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigurationManager.AppSettings["PARAMETERSFILENAME"]);
                 string BADWORDKEYFILENAME = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigurationManager.AppSettings["BADWORDSFILENAME"]);
 
-                //Trace.TraceInformation("REGEXFORMATFILENAME : " + REGEXFORMATFILENAME);
-                //Trace.TraceInformation("PARAMETERSFILENAME : " + PARAMETERSFILENAME);
-                //Trace.TraceInformation("BADWORDKEYFILENAME : " + BADWORDKEYFILENAME);
 
-                
                 string REGEXSTRING = string.Empty;
                 ArrayList REGEXARRAY = new ArrayList();
                 string BADWORDKEYSTRING = string.Empty;
                 List<CardTypeInfo> CardTypeInfo = null;
+                Validation validation = null;
 
                 // Store data in the cache
-                ObjectCache cache = MemoryCache.Default;              
+                ObjectCache cache = MemoryCache.Default;
                 CacheItemPolicy cacheItemPolicy = new CacheItemPolicy();
                 cacheItemPolicy.AbsoluteExpiration = new DateTime(DateTime.Today.Year, DateTime.Today.Month, DateTime.Today.Day, 23, 59, 59);
-                foreach (var item in MemoryCache.Default) 
-                {
-                    Trace.TraceInformation("ObjectCache: " + item.Key + " val: " + item.Value);
-                }
                 
+                if (cache.Contains(cacheValidationObjKey))
+                {
+                    validation =  (Validation)cache[cacheValidationObjKey];
+                    if(validation.GetCardType()!=null && validation.GetRegexArray() !=null && validation.GetRegexString() != string.Empty)
+                    {
+                        return validation;
+                    }
+                }
 
                 // Reading regex formats
                 if (!cache.Contains(cacheFormatKey))
@@ -314,16 +318,13 @@ namespace MessengerBot.Controllers
                         }
 
                         REGEXSTRING = REGEXSTRING.Substring(0, REGEXSTRING.Length - 1);
-                        Trace.TraceInformation("REGEXSTRING 1: " + REGEXSTRING);
+                        //Trace.TraceInformation("REGEXSTRING 1: " + REGEXSTRING);
                         cache.Add(cacheFormatKey, REGEXSTRING, cacheItemPolicy);
 
                     }
                 }
-                else
-                {
+                else               
                     REGEXSTRING = cache[cacheFormatKey].ToString();
-                    Trace.TraceInformation("REGEXSTRING 2: " + REGEXSTRING);
-                }
 
                 // Reading card type informaion
                 if (!cache.Contains(cacheCardInfoKey))
@@ -337,15 +338,12 @@ namespace MessengerBot.Controllers
                         {
                             CardTypeInfo.Add(new MessengerBot.Controllers.CardTypeInfo(txt.ReadLine().Split(';')[1].Trim()));
                         }
-                        Trace.TraceInformation("REGEXARRAY 1: " + CardTypeInfo[0].RegEx);
+                        //Trace.TraceInformation("REGEXARRAY 1: " + CardTypeInfo[0].RegEx);
                         cache.Add(cacheCardInfoKey, CardTypeInfo, cacheItemPolicy);
                     }
                 }
-                else
-                {
+                else                
                     REGEXARRAY = (ArrayList)cache[cacheCardInfoKey];
-                    Trace.TraceInformation("REGEXARRAY 2: " + CardTypeInfo[0].RegEx);
-                }
 
                 // Reading bad words 
                 if (!cache.Contains(cacheBadWordsKey))
@@ -361,19 +359,18 @@ namespace MessengerBot.Controllers
                         }
 
                         cache.Add(cacheBadWordsKey, BADWORDKEYSTRING, cacheItemPolicy);
-                        Trace.TraceInformation("BADWORDKEYSTRING 1: " + BADWORDKEYSTRING);
+                        //Trace.TraceInformation("BADWORDKEYSTRING 1: " + BADWORDKEYSTRING);
                     }
                 }
                 else
-                {
                     BADWORDKEYSTRING = cache[cacheBadWordsKey].ToString();
-                    Trace.TraceInformation("BADWORDKEYSTRING 2: " + BADWORDKEYSTRING);
-                }
 
-
-                return new Validation(REGEXSTRING, REGEXARRAY, CardTypeInfo);
+                Exit:
+                    validation = new Validation(REGEXSTRING, REGEXARRAY, CardTypeInfo);
+                    cache.Add(cacheValidationObjKey, validation, cacheItemPolicy);
+                    return validation;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             { }
 
             return null;
@@ -386,7 +383,7 @@ namespace MessengerBot.Controllers
             {
                 Validation validation = GetResourceValues();
                 matchedWords = validation.Detect(message);
-
+                
                 // No credit card info found
                 if (matchedWords == "")
                 {
@@ -408,15 +405,15 @@ namespace MessengerBot.Controllers
                     }
                 }
 
-            }catch (Exception ex) { }
+            }
+            catch (Exception ex) { }
 
             return matchedWords;
         }
         private void CreateXMLNode(Models.WebhookModel model)
         {
-            
 
-            Trace.TraceInformation("Creating and adding XML node to text file...");
+            Trace.TraceInformation("Creating and adding XML node to text file...");            
 
             string xmlPostNode = "<Posts GroupName='{0}' GroupID='{1}' PostID='{2}' Type='{7}' PostedTime='{3}' PostedBy='{4}' Message='{5}' Prev_Url='{8}'>{6}</Posts>";
             string xmlPostAttachmentNode = "<Attachment Url='{0}' src='{1}' />";
@@ -425,31 +422,30 @@ namespace MessengerBot.Controllers
 
             string xmlMesssageAttachmentNode = "<Message MessageID='{0}' CreatedTime='{1}' Message='{2}' ><Participants Participants='{3}' />{4}</ Message >";
             string xmlMessageAttachmentHolderNode = "<Attachment Attachment_ID='{0}' Attachment_mime_type='{1}' Attachment_Name='{2}' size='{3}' src='{4}' />";
-            string xmlMessageNode = "<Message MessageID='{0}' CreatedTime='{1}' Message='{2}' ><Participants Participants='{3}' ></ Message>";                    
+            string xmlMessageNode = "<Message MessageID='{0}' CreatedTime='{1}' Message='{2}' ><Participants Participants='{3}' ></ Message>";
             string xmlFilteredMessageNode = "<Message MessageID='{0}' CreatedTime='{1}' Message='{2}' MatchedWords='{3}'><Participants Participants='{4}' /></Message>";
 
             string xmlFileNode = "<File Url='{0}' Src='{1}' />";
 
-            string filePath = string.Empty;
+            string filePath= string.Empty;
             string filteredFilePath = string.Empty;
             string attachFfilePath = string.Empty;
             string xmlLog = string.Empty;
             string xmlFilesLog = string.Empty;
+            string xmlFilteredeLog = string.Empty;
             string message = string.Empty;
             string matchedWords = string.Empty;
-
-            CreatingDirectories();
+            
+             CreatingDirectories();
 
             string DATE = DateTime.Today.ToString("MMddyyyy");
-            string postDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigurationManager.AppSettings["WPGROUPPOSTS"], DATE);
-            string chatDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigurationManager.AppSettings["WPCHAT"], DATE);
-            string filesDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigurationManager.AppSettings["WPFILES"],DATE);
-            
+           
+            string WPXMLFOLDER = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigurationManager.AppSettings["WPXMLFOLDER"]);
 
             // Archiving
             try
             {
-                
+
                 switch (model.entry[0].field)
                 {
                     // Post to walls
@@ -458,11 +454,11 @@ namespace MessengerBot.Controllers
                         break;
 
                     case "posts":
-                    case "comments":                  
+                    case "comments":
 
-                        filePath = Path.Combine(postDirectory, wpPostsFilesName + "_" + DateTime.Today.ToString("MMddyyyy") + ".txt");
-                        filteredFilePath = Path.Combine(postDirectory, wpPostsFilteredFileName + "_" + DateTime.Today.ToString("MMddyyyy") + ".txt");
-                        attachFfilePath = Path.Combine(postDirectory, wpPostsAttachmentFileName + "_" + DateTime.Today.ToString("MMddyyyy") + ".txt");
+                        filePath = Path.Combine(WPXMLFOLDER, wpPostsFilesName + "_" + DateTime.Today.ToString("MMddyyyy") + ".txt");
+                        filteredFilePath = Path.Combine(WPXMLFOLDER, wpPostsFilteredFileName + "_" + DateTime.Today.ToString("MMddyyyy") + ".txt");
+                        attachFfilePath = Path.Combine(WPXMLFOLDER, wpPostsAttachmentFileName + "_" + DateTime.Today.ToString("MMddyyyy") + ".txt");
 
                         string groupID = model.entry[0].Post.post_id.Split("_".ToCharArray())[0];
                         string postID = model.entry[0].Post.post_id.Split("_".ToCharArray())[1];
@@ -471,13 +467,13 @@ namespace MessengerBot.Controllers
                         message = model.entry[0].Post.message;
                         string type = model.entry[0].Post.type;
                         string prev_url = model.entry[0].Post.permalink_url;
-                        
+
 
                         if (model.entry[0].attachments != null)
-                        {                           
+                        {
                             string attachments = string.Empty;
 
-                            for (int i=0; i< model.entry[0].attachments.Count();i++)
+                            for (int i = 0; i < model.entry[0].attachments.Count(); i++)
                             {
 
                                 string url = model.entry[0].attachments[i].url;
@@ -490,26 +486,27 @@ namespace MessengerBot.Controllers
 
                             xmlPostAttachmentCollNode = string.Format(xmlPostAttachmentCollNode, attachments);
                             xmlLog = string.Format(xmlPostNode, string.Empty, groupID, postID, postedDate, postedBy, message, xmlPostAttachmentCollNode, type, prev_url);
-                            
+
                         }
                         else
-                            xmlLog = string.Format(xmlPostNode, string.Empty, groupID, postID, postedDate, postedBy, message,"", type, prev_url);
+                            xmlLog = string.Format(xmlPostNode, string.Empty, groupID, postID, postedDate, postedBy, message, "", type, prev_url);
 
-
+                        Trace.TraceInformation("MESSAGE 1: " + message);
                         matchedWords = FindingBad(message);
-                        Trace.TraceInformation("matchedWords 1: " + matchedWords);
-                        if (matchedWords !="")
-                            xmlFilteredPostNode = string.Format(xmlFilteredPostNode, "", groupID, postID, postedDate, postedBy, message, matchedWords);
+                        Trace.TraceInformation("MATCHEDWORDS 1: " + matchedWords);
+
+                        if (matchedWords != "")
+                            xmlFilteredeLog = string.Format(xmlFilteredPostNode, "", groupID, postID, postedDate, postedBy, message, matchedWords);
 
                         break;
 
                     case "message_sends":
 
-                        filePath = Path.Combine(chatDirectory, wpChatFileName + "_" + DateTime.Today.ToString("MMddyyyy") + ".txt");
-                        filteredFilePath = Path.Combine(chatDirectory, wpChatFilteredFileName + "_" + DateTime.Today.ToString("MMddyyyy") + ".txt");
-                        attachFfilePath = Path.Combine(chatDirectory, wpChatAttachmentFileName + "_" + DateTime.Today.ToString("MMddyyyy") + ".txt");
+                        filePath = Path.Combine(WPXMLFOLDER, wpChatFileName + "_" + DateTime.Today.ToString("MMddyyyy") + ".txt");
+                        filteredFilePath = Path.Combine(WPXMLFOLDER, wpChatFilteredFileName + "_" + DateTime.Today.ToString("MMddyyyy") + ".txt");
+                        attachFfilePath = Path.Combine(WPXMLFOLDER, wpChatAttachmentFileName + "_" + DateTime.Today.ToString("MMddyyyy") + ".txt");
 
-                         
+
                         string user = model.entry[0].Message.from.name + "(" + model.entry[0].Message.from.id + ")";
                         message = model.entry[0].Message.message;
                         string id = model.entry[0].Message.id;
@@ -521,85 +518,49 @@ namespace MessengerBot.Controllers
                             participants += model.entry[0].Message.to.data[i].name + "(" + model.entry[0].Message.to.data[i].id + ");";
 
                         // Chat message with attachment
-                        if(model.entry[0].Message.attachments != null)
+                        if (model.entry[0].Message.attachments != null)
                         {
                             if (model.entry[0].Message.attachments.data.Count > 0)
                             {
                                 for (int i = 0; i < model.entry[0].Message.attachments.data.Count; i++)
-                                {                                    
+                                {
                                     xmlMessageAttachmentHolderNode = string.Format(xmlMessageAttachmentHolderNode,
-                                        model.entry[0].Message.attachments.data[i].id, 
-                                        model.entry[0].Message.attachments.data[i].mime_type, 
+                                        model.entry[0].Message.attachments.data[i].id,
+                                        model.entry[0].Message.attachments.data[i].mime_type,
                                         model.entry[0].Message.attachments.data[i].name,
-                                        model.entry[0].Message.attachments.data[i].size, 
+                                        model.entry[0].Message.attachments.data[i].size,
                                         model.entry[0].Message.attachments.data[i].image_data.preview_url);
 
                                     xmlFilesLog += string.Format(xmlFileNode, model.entry[0].Message.attachments.data[i].image_data.preview_url, string.Empty);
-                                    
+
                                 }
-                                
-                                xmlLog = string.Format(xmlMesssageAttachmentNode, 
-                                    id, 
+
+                                xmlLog = string.Format(xmlMesssageAttachmentNode,
+                                    id,
                                     createdTme,
                                     message,
-                                    participants, 
-                                    xmlMessageAttachmentHolderNode);       
-                               
+                                    participants,
+                                    xmlMessageAttachmentHolderNode);
+
                             }
                         }
                         else
                             xmlLog = string.Format(xmlMessageNode, id, createdTme, message, participants);
 
+                        Trace.TraceInformation("MESSAGE 1: " + message);
                         matchedWords = FindingBad(message);
-                        Trace.TraceInformation("matchedWords 2!: " + matchedWords);
+                        Trace.TraceInformation("MATCHEDWORDS 2!: " + matchedWords);
                         if (matchedWords != "")
-                            xmlFilteredMessageNode = string.Format(xmlFilteredMessageNode, id, createdTme, message, matchedWords, participants);
+                            xmlFilteredeLog = string.Format(xmlFilteredMessageNode, id, createdTme, message, matchedWords, participants);
 
                         break;
                 }
 
+                WriteToFile(xmlLog, filePath);
+                WriteToFile(xmlFilesLog, wpFilesFilesName);
+                WriteToFile(xmlFilteredeLog, filteredFilePath);
 
-                // Create a file if its not exist
-                if (!File.Exists(filePath))
-                {
-                    Trace.TraceInformation("File being created and add");
-                    using (System.IO.StreamWriter file = new System.IO.StreamWriter(filePath))
-                    {
-                        file.WriteLine(xmlLog);
-                    }
-                }
-                // Append to an existing file
-                else
-                {
-                    Trace.TraceInformation("Add to an existign file");
-                    using (StreamWriter sw = File.AppendText(filePath))
-                    {
-                        sw.WriteLine(xmlLog);
-                    }
-                }
-
-                if(xmlFilesLog != string.Empty)
-                {   
-                    wpFilesFilesName = Path.Combine(filesDirectory, wpFilesFilesName + "_" + DateTime.Today.ToString("MMddyyyy") + ".txt");
-
-                    if (!File.Exists(wpFilesFilesName))
-                    {
-                        Trace.TraceInformation("File being created and add");
-                        using (System.IO.StreamWriter file = new System.IO.StreamWriter(wpFilesFilesName))
-                        {
-                            file.WriteLine(xmlFilesLog);
-                        }
-                    }
-                    // Append to an existing file
-                    else
-                    {
-                        Trace.TraceInformation("Add to an existign file");
-                        using (StreamWriter sw = File.AppendText(wpFilesFilesName))
-                        {
-                            sw.WriteLine(xmlFilesLog);
-                        }
-                    }
-                }
+               
 
                 //// Read file and write to Trace
                 //if (!File.Exists(filePath))
@@ -620,6 +581,34 @@ namespace MessengerBot.Controllers
                 Trace.TraceInformation(ex.ToString());
 
             }
+        }
+
+        private void WriteToFile(string xmlLog, string filePath)
+        {
+            try
+            {
+                if (xmlLog != string.Empty)
+                {
+                    // Create a file if its not exist
+                    if (!File.Exists(filePath))
+                    {
+                        using (System.IO.StreamWriter file = new System.IO.StreamWriter(filePath))
+                        {
+                            file.WriteLine(xmlLog);
+                        }
+                    }
+                    // Append to an existing file
+                    else
+                    {
+                        using (StreamWriter sw = File.AppendText(filePath))
+                        {
+                            sw.WriteLine(xmlLog);
+                        }
+                    }
+                }
+
+            }
+            catch(Exception ex) { }
         }
 
         #endregion
