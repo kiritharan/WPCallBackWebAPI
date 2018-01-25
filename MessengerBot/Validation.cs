@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Configuration;
 using System.Collections.Generic;
@@ -219,6 +219,21 @@ namespace MessengerBot.Controllers
             }
 
             return matchCard;
+        }
+
+        public string GetRegexString()
+        {
+            return REGEXSTRING;
+        }
+
+        public ArrayList GetRegexArray()
+        {
+            return REGEXARRAY;
+        }
+
+        public List<CardTypeInfo> GetCardType()
+        { 
+            return _cardTypeInfo;
         }
     }
 }
