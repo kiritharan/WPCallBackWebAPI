@@ -15,17 +15,9 @@ namespace MessengerBot
 
             config.Routes.MapHttpRoute(
                 name: "DefaultApi",
-                routeTemplate: "api/{controller}/{id}", // go to Web API controller
-              //     routeTemplate: "api/get/{id}",
+                routeTemplate: "api/{controller}/{id}", // go to Web API controller           
                 defaults: new { id = RouteParameter.Optional }
             );
-
-            //config.Routes.MapHttpRoute(
-            // name: "Manage",
-            // routeTemplate: "Manage/{action}/{id}", // go to MVC controller
-            //  defaults: new { controller = "Manage", action = "Configure", id = RouteParameter.Optional }
-            //);
-
         }
     }
 }
