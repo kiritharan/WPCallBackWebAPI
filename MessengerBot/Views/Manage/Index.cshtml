@@ -1,0 +1,38 @@
+﻿
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Index</title>
+</head>
+<body>
+    <div>
+        <table>
+
+            <tr>
+                <td>
+                    Read Cache
+                </td>
+                <td>
+                    <input type="submit" value="Refresh Cache" onclick="location.href='@Url.Action("Configure", "Manage")'" />
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    Read Logs
+                </td>
+                <td>
+                    <input type="submit" value="Read Logs" onclick="location.href='@Url.Action("ReadLogs", "Manage")'" />
+                </td>
+            </tr>
+
+        </table>
+    </div>
+    
+</body>
+</html>
