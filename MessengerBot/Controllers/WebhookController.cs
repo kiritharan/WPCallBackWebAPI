@@ -45,29 +45,92 @@ namespace MessengerBot.Controllers
         private const string cacheBadWordsKey = "CacheKey_RegexBadWords";
         private const string cacheValidationObjKey = "CacheKey_Validation";
 
+        string NASPath = AppDomain.CurrentDomain.BaseDirectory;// ConfigurationManager.AppSettings["NASPATH"];      
+
+      
+
+        private string GetCacheData()
+        {
+            //return "Clicked";
+            string cacheVals = string.Empty;
+
+            ObjectCache cache = MemoryCache.Default;
+            List<string> cacheKeys = cache.Select(kvp => kvp.Key).ToList();
+            foreach (string cacheKey in cacheKeys)
+            {
+                if ((cacheKey == cacheFormatKey) ||
+                    (cacheKey == cacheCardInfoKey) ||
+                        (cacheKey == cacheBadWordsKey) ||
+                        (cacheKey == cacheValidationObjKey))
+                {
+                    cache.Remove(cacheKey);
+                    cacheVals += "Removed: " + cacheKey + "\r\n";
+                }
+            }
+
+            return "vals: " + cacheVals;
+        }
         public HttpResponseMessage Get()
         {
+            WriteToLogs("WebhookController.Get(): Call requested");
             var querystrings = Request.GetQueryNameValuePairs().ToDictionary(x => x.Key, x => x.Value);
-            if (querystrings["hub.verify_token"] == "hello")
+
+            if (querystrings["action"] == "clear")
             {
+                string vals =  GetCacheData();
                 return new HttpResponseMessage(HttpStatusCode.OK)
                 {
-                    Content = new StringContent(querystrings["hub.challenge"], Encoding.UTF8, "text/plain")
+                    Content = new StringContent(vals)
                 };
             }
-            return new HttpResponseMessage(HttpStatusCode.Unauthorized);
+            else
+            {
+                // Creating folder at NAS drive to store XML files
+                CreatingDirectories();
+
+                WriteToLogs("WebhookController.Get(): Sent verificaiton token" + querystrings["hub.verify_token"]);
+
+                var token = ConfigurationManager.AppSettings["WPVERIFICATIONTOKEN"];
+
+                if (querystrings["hub.verify_token"] == token)
+                {
+                    WriteToLogs("WebhookController.Get(): Correct verificaiton token");
+
+                    return new HttpResponseMessage(HttpStatusCode.OK)
+                    {
+                        Content = new StringContent(querystrings["hub.challenge"], Encoding.UTF8, "text/plain")
+                    };
+                }
+                else
+                {
+                    WriteToLogs("WebhookController.Get(): Unauthorized call");
+
+                    return new HttpResponseMessage(HttpStatusCode.Unauthorized);
+                }
+            }        
+            
         }
 
         [HttpPost]
         public async Task<HttpResponseMessage> Post()
         {
-            var signature = Request.Headers.GetValues("X-Hub-Signature").FirstOrDefault().Replace("sha1=", "");
-            var body = await Request.Content.ReadAsStringAsync();
-            if (!VerifySignature(signature, body))
-                return new HttpResponseMessage(HttpStatusCode.BadRequest);
+            try
+            {
+              
+                var signature = Request.Headers.GetValues("X-Hub-Signature").FirstOrDefault().Replace("sha1=", "");
+                var body = await Request.Content.ReadAsStringAsync();
 
-            AddingNodeToXmlFile(body);
+                WriteToLogs("WebhookController.Post(): Reading body content");
 
+                if (!VerifySignature(signature, body))
+                    return new HttpResponseMessage(HttpStatusCode.BadRequest);                
+
+                AddingNodeToXmlFile(body);                
+            }
+            catch (Exception ex) {
+
+                WriteToLogs(ex.ToString());
+            }
 
             return new HttpResponseMessage(HttpStatusCode.OK);
         }
@@ -75,11 +138,21 @@ namespace MessengerBot.Controllers
         private bool VerifySignature(string signature, string body)
         {
             var hashString = new StringBuilder();
-            using (var crypto = new HMACSHA1(Encoding.UTF8.GetBytes(appSecret)))
+
+            try
             {
-                var hash = crypto.ComputeHash(Encoding.UTF8.GetBytes(body));
-                foreach (var item in hash)
-                    hashString.Append(item.ToString("X2"));
+                WriteToLogs("WebhookController.VerifySignature(): Verifying");
+
+                using (var crypto = new HMACSHA1(Encoding.UTF8.GetBytes(appSecret)))
+                {
+                    var hash = crypto.ComputeHash(Encoding.UTF8.GetBytes(body));
+                    foreach (var item in hash)
+                        hashString.Append(item.ToString("X2"));
+                }
+            }
+            catch (Exception ex)  {
+
+                WriteToLogs(ex.ToString());
             }
 
             return hashString.ToString().ToLower() == signature.ToLower();
@@ -122,8 +195,8 @@ namespace MessengerBot.Controllers
         private void AddingNodeToXmlFile(string body)
         {
             try
-            {
-                Trace.TraceInformation("Transaction start **");// + body);
+            {                
+                WriteToLogs("WebhookController.AddingNodeToXmlFile(): START");
 
                 var value = JsonConvert.DeserializeObject<WebhookModel>(body);
                 WebhookModel model = JsonConvert.DeserializeObject<WebhookModel>(body);
@@ -137,6 +210,7 @@ namespace MessengerBot.Controllers
                 // Thsi is from Workplace group
                 if (model._object == "group")
                 {
+                    #region
                     if ((model.entry[0].field == "posts") || (model.entry[0].field == "comments"))
                     {
                         Post post = JsonConvert.DeserializeObject<Post>(json["value"].ToString());
@@ -201,15 +275,16 @@ namespace MessengerBot.Controllers
 
                         // Add to node if it is add operation (posting, commenting)
                         if (post.verb == "add" || post.verb == "edit")
-                            CreateXMLNode(model);
+                            CreateXMLNode(model);                       
+                      
                     }
+
+                    #endregion
                 }
 
                 // This is from Workplace chat 
                 else if (model._object == "user")
                 {
-                   // Trace.TraceInformation("Object: " + model._object);
-
                     if (model.entry[0].field == "message_sends")
                     {
                         Message msg = JsonConvert.DeserializeObject<Message>(json["value"].ToString());
@@ -218,8 +293,11 @@ namespace MessengerBot.Controllers
                     }
                     else if (model.entry[0].field == "status")
                     {
-                        Post post = JsonConvert.DeserializeObject<Post>(json["value"].ToString());
-                        post.type = model.entry[0].field;
+                        Post post = new Models.Post();
+
+                        post.message = json["value"].ToString();
+                        post.post_id = json["id"].ToString(); 
+                        post.created_time = value.entry[0].time.ToString();
                         model.entry[0].Post = post;
                     }
 
@@ -227,11 +305,11 @@ namespace MessengerBot.Controllers
                 }
 
                 Exit:
-                Trace.TraceInformation("** Transaction end **");
+                    WriteToLogs("WebhookController.AddingNodeToXmlFile(): END");
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex){
 
+                WriteToLogs(ex.ToString());
             }
         }
 
@@ -239,38 +317,19 @@ namespace MessengerBot.Controllers
         {
             try
             {
-                //string DATE = DateTime.Today.ToString("MMddyyyy");
-                //string WPGROUPPOSTS = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigurationManager.AppSettings["WPGROUPPOSTS"], DATE);
-                //string WPCHAT = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigurationManager.AppSettings["WPCHAT"], DATE);
-                //string WPFILES = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigurationManager.AppSettings["WPFILES"], DATE);
-
-                //if (!Directory.Exists(WPGROUPPOSTS))
-                //{
-                //    Trace.TraceInformation("Creating directory to store group posts " + WPGROUPPOSTS);
-                //    Directory.CreateDirectory(WPGROUPPOSTS);
-                //}
-
-                //if (!Directory.Exists(WPCHAT))
-                //{
-                //    Trace.TraceInformation("Creating directory to store chat messages " + WPCHAT);
-                //    Directory.CreateDirectory(WPCHAT);
-                //}
-
-                //if (!Directory.Exists(WPFILES))
-                //{
-                //    Trace.TraceInformation("Creating directory to store file informations " + WPFILES);
-                //    Directory.CreateDirectory(WPFILES);
-                //}
-
-                string WPXMLFOLDER = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigurationManager.AppSettings["WPXMLFOLDER"]);
+                string WPXMLFOLDER = Path.Combine(NASPath, ConfigurationManager.AppSettings["WPFOLDER"]);
 
                 if (!Directory.Exists(WPXMLFOLDER))
                 {
-                    Trace.TraceInformation("Creating directory to store files.. ");
+                    WriteToLogs("WebhookController.CreatingDirectories(): Creating " + WPXMLFOLDER + " folder");
+                   
                     Directory.CreateDirectory(WPXMLFOLDER);
                 }
             }
-            catch (Exception ex) { }
+            catch (Exception ex) {
+
+                WriteToLogs(ex.ToString());
+            }
         }
 
         private Validation GetResourceValues()
@@ -278,9 +337,9 @@ namespace MessengerBot.Controllers
             try
             {
 
-                string REGEXFORMATFILENAME = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigurationManager.AppSettings["REGEXFORMATFILENAME"]);
-                string PARAMETERSFILENAME = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigurationManager.AppSettings["PARAMETERSFILENAME"]);
-                string BADWORDKEYFILENAME = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigurationManager.AppSettings["BADWORDSFILENAME"]);
+                string REGEXFORMATFILENAME = Path.Combine(NASPath, ConfigurationManager.AppSettings["REGEXFORMATFILENAME"]);
+                string PARAMETERSFILENAME = Path.Combine(NASPath, ConfigurationManager.AppSettings["PARAMETERSFILENAME"]);
+                string BADWORDKEYFILENAME = Path.Combine(NASPath, ConfigurationManager.AppSettings["BADWORDSFILENAME"]);
 
 
                 string REGEXSTRING = string.Empty;
@@ -293,12 +352,13 @@ namespace MessengerBot.Controllers
                 ObjectCache cache = MemoryCache.Default;
                 CacheItemPolicy cacheItemPolicy = new CacheItemPolicy();
                 cacheItemPolicy.AbsoluteExpiration = new DateTime(DateTime.Today.Year, DateTime.Today.Month, DateTime.Today.Day, 23, 59, 59);
-                
+
                 if (cache.Contains(cacheValidationObjKey))
                 {
-                    validation =  (Validation)cache[cacheValidationObjKey];
-                    if(validation.GetCardType()!=null && validation.GetRegexArray() !=null && validation.GetRegexString() != string.Empty)
+                    validation = (Validation)cache[cacheValidationObjKey];
+                    if (validation.GetCardType() != null && validation.GetRegexArray() != null && validation.GetRegexString() != string.Empty)
                     {
+                        WriteToLogs("WebhookController.GetResourceValues(): validation object found inside cache");
                         return validation;
                     }
                 }
@@ -318,12 +378,13 @@ namespace MessengerBot.Controllers
                         }
 
                         REGEXSTRING = REGEXSTRING.Substring(0, REGEXSTRING.Length - 1);
-                        //Trace.TraceInformation("REGEXSTRING 1: " + REGEXSTRING);
+
+                        WriteToLogs("WebhookController.GetResourceValues(): Adding regex format to cache");
                         cache.Add(cacheFormatKey, REGEXSTRING, cacheItemPolicy);
 
                     }
                 }
-                else               
+                else
                     REGEXSTRING = cache[cacheFormatKey].ToString();
 
                 // Reading card type informaion
@@ -338,11 +399,12 @@ namespace MessengerBot.Controllers
                         {
                             CardTypeInfo.Add(new MessengerBot.Controllers.CardTypeInfo(txt.ReadLine().Split(';')[1].Trim()));
                         }
-                        //Trace.TraceInformation("REGEXARRAY 1: " + CardTypeInfo[0].RegEx);
+
+                        WriteToLogs("WebhookController.GetResourceValues(): Adding card types to cache");
                         cache.Add(cacheCardInfoKey, CardTypeInfo, cacheItemPolicy);
                     }
                 }
-                else                
+                else
                     REGEXARRAY = (ArrayList)cache[cacheCardInfoKey];
 
                 // Reading bad words 
@@ -358,20 +420,26 @@ namespace MessengerBot.Controllers
                             BADWORDKEYSTRING += str.Trim().ToLower();
                         }
 
+                        WriteToLogs("WebhookController.GetResourceValues(): Adding bad words to cache");
                         cache.Add(cacheBadWordsKey, BADWORDKEYSTRING, cacheItemPolicy);
-                        //Trace.TraceInformation("BADWORDKEYSTRING 1: " + BADWORDKEYSTRING);
+                       
                     }
                 }
                 else
                     BADWORDKEYSTRING = cache[cacheBadWordsKey].ToString();
 
-                Exit:
-                    validation = new Validation(REGEXSTRING, REGEXARRAY, CardTypeInfo);
-                    cache.Add(cacheValidationObjKey, validation, cacheItemPolicy);
-                    return validation;
+                
+                validation = new Validation(REGEXSTRING, REGEXARRAY, CardTypeInfo);
+
+                WriteToLogs("WebhookController.GetResourceValues(): Adding validation object to cache");
+                cache.Add(cacheValidationObjKey, validation, cacheItemPolicy);
+
+                return validation;
             }
-            catch (Exception ex)
-            { }
+            catch (Exception ex){
+
+                WriteToLogs(ex.ToString());
+            }
 
             return null;
         }
@@ -382,8 +450,9 @@ namespace MessengerBot.Controllers
             try
             {
                 Validation validation = GetResourceValues();
+
                 matchedWords = validation.Detect(message);
-                
+
                 // No credit card info found
                 if (matchedWords == "")
                 {
@@ -404,16 +473,16 @@ namespace MessengerBot.Controllers
                         }
                     }
                 }
-
             }
-            catch (Exception ex) { }
+            catch (Exception ex) {
+
+                WriteToLogs(ex.ToString());
+            }
 
             return matchedWords;
         }
         private void CreateXMLNode(Models.WebhookModel model)
         {
-
-            Trace.TraceInformation("Creating and adding XML node to text file...");            
 
             string xmlPostNode = "<Posts GroupName='{0}' GroupID='{1}' PostID='{2}' Type='{7}' PostedTime='{3}' PostedBy='{4}' Message='{5}' Prev_Url='{8}'>{6}</Posts>";
             string xmlPostAttachmentNode = "<Attachment Url='{0}' src='{1}' />";
@@ -427,7 +496,7 @@ namespace MessengerBot.Controllers
 
             string xmlFileNode = "<File Url='{0}' Src='{1}' />";
 
-            string filePath= string.Empty;
+            string filePath = string.Empty;
             string filteredFilePath = string.Empty;
             string attachFfilePath = string.Empty;
             string xmlLog = string.Empty;
@@ -435,12 +504,12 @@ namespace MessengerBot.Controllers
             string xmlFilteredeLog = string.Empty;
             string message = string.Empty;
             string matchedWords = string.Empty;
-            
-             CreatingDirectories();
+
+           
 
             string DATE = DateTime.Today.ToString("MMddyyyy");
-           
-            string WPXMLFOLDER = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigurationManager.AppSettings["WPXMLFOLDER"]);
+
+            string WPXMLFOLDER = Path.Combine(NASPath, ConfigurationManager.AppSettings["WPFOLDER"]);
 
             // Archiving
             try
@@ -449,32 +518,38 @@ namespace MessengerBot.Controllers
                 switch (model.entry[0].field)
                 {
                     // Post to walls
-                    case "status":
+                    //case "status":
 
-                        break;
+                    //    break;
 
                     case "posts":
+                    case "status":
                     case "comments":
 
-                        filePath = Path.Combine(WPXMLFOLDER, wpPostsFilesName + "_" + DateTime.Today.ToString("MMddyyyy") + ".txt");
-                        filteredFilePath = Path.Combine(WPXMLFOLDER, wpPostsFilteredFileName + "_" + DateTime.Today.ToString("MMddyyyy") + ".txt");
-                        attachFfilePath = Path.Combine(WPXMLFOLDER, wpPostsAttachmentFileName + "_" + DateTime.Today.ToString("MMddyyyy") + ".txt");
+                        filePath = Path.Combine(WPXMLFOLDER, wpPostsFilesName + DateTime.Today.ToString("MMddyyyy") + ".txt");
+                        filteredFilePath = Path.Combine(WPXMLFOLDER, wpPostsFilteredFileName  + DateTime.Today.ToString("MMddyyyy") + ".txt");
+                        attachFfilePath = Path.Combine(WPXMLFOLDER, wpPostsAttachmentFileName  + DateTime.Today.ToString("MMddyyyy") + ".txt");                                 
 
-                        string groupID = model.entry[0].Post.post_id.Split("_".ToCharArray())[0];
-                        string postID = model.entry[0].Post.post_id.Split("_".ToCharArray())[1];
+                        string groupID = model.entry[0].Post.post_id != string.Empty ? model.entry[0].Post.post_id.Split("_".ToCharArray())[0] : string.Empty;
+                        string postID = model.entry[0].Post.post_id != string.Empty ? model.entry[0].Post.post_id.Split("_".ToCharArray())[0] : string.Empty;
                         string postedDate = model.entry[0].Post.created_time;
-                        string postedBy = model.entry[0].Post.from.name + "_" + model.entry[0].Post.from.id;
+                        string postedBy = model.entry[0].field != "status" ? model.entry[0].Post.from.name + "_" + model.entry[0].Post.from.id: string.Empty;
                         message = model.entry[0].Post.message;
                         string type = model.entry[0].Post.type;
                         string prev_url = model.entry[0].Post.permalink_url;
 
+                        if (model.entry[0].field == "status")
+                        {
+                            groupID = "Wall Post";
+                            postedBy = model.entry[0].Post.post_id != string.Empty ? model.entry[0].Post.post_id.Split("_".ToCharArray())[0] : string.Empty;
+                           
+                        }
 
                         if (model.entry[0].attachments != null)
                         {
                             string attachments = string.Empty;
 
-                            for (int i = 0; i < model.entry[0].attachments.Count(); i++)
-                            {
+                            for (int i = 0; i < model.entry[0].attachments.Count(); i++)  {
 
                                 string url = model.entry[0].attachments[i].url;
                                 string src = model.entry[0].attachments[i].src;
@@ -490,10 +565,8 @@ namespace MessengerBot.Controllers
                         }
                         else
                             xmlLog = string.Format(xmlPostNode, string.Empty, groupID, postID, postedDate, postedBy, message, "", type, prev_url);
-
-                        Trace.TraceInformation("MESSAGE 1: " + message);
-                        matchedWords = FindingBad(message);
-                        Trace.TraceInformation("MATCHEDWORDS 1: " + matchedWords);
+                     
+                        matchedWords = FindingBad(message);                     
 
                         if (matchedWords != "")
                             xmlFilteredeLog = string.Format(xmlFilteredPostNode, "", groupID, postID, postedDate, postedBy, message, matchedWords);
@@ -502,9 +575,9 @@ namespace MessengerBot.Controllers
 
                     case "message_sends":
 
-                        filePath = Path.Combine(WPXMLFOLDER, wpChatFileName + "_" + DateTime.Today.ToString("MMddyyyy") + ".txt");
-                        filteredFilePath = Path.Combine(WPXMLFOLDER, wpChatFilteredFileName + "_" + DateTime.Today.ToString("MMddyyyy") + ".txt");
-                        attachFfilePath = Path.Combine(WPXMLFOLDER, wpChatAttachmentFileName + "_" + DateTime.Today.ToString("MMddyyyy") + ".txt");
+                        filePath = Path.Combine(WPXMLFOLDER, wpChatFileName + DateTime.Today.ToString("MMddyyyy") + ".txt");
+                        filteredFilePath = Path.Combine(WPXMLFOLDER, wpChatFilteredFileName  + DateTime.Today.ToString("MMddyyyy") + ".txt");
+                        attachFfilePath = Path.Combine(WPXMLFOLDER, wpChatAttachmentFileName  + DateTime.Today.ToString("MMddyyyy") + ".txt");
 
 
                         string user = model.entry[0].Message.from.name + "(" + model.entry[0].Message.from.id + ")";
@@ -522,8 +595,8 @@ namespace MessengerBot.Controllers
                         {
                             if (model.entry[0].Message.attachments.data.Count > 0)
                             {
-                                for (int i = 0; i < model.entry[0].Message.attachments.data.Count; i++)
-                                {
+                                for (int i = 0; i < model.entry[0].Message.attachments.data.Count; i++) {
+
                                     xmlMessageAttachmentHolderNode = string.Format(xmlMessageAttachmentHolderNode,
                                         model.entry[0].Message.attachments.data[i].id,
                                         model.entry[0].Message.attachments.data[i].mime_type,
@@ -547,9 +620,9 @@ namespace MessengerBot.Controllers
                         else
                             xmlLog = string.Format(xmlMessageNode, id, createdTme, message, participants);
 
-                        Trace.TraceInformation("MESSAGE 1: " + message);
+                   
                         matchedWords = FindingBad(message);
-                        Trace.TraceInformation("MATCHEDWORDS 2!: " + matchedWords);
+                     
                         if (matchedWords != "")
                             xmlFilteredeLog = string.Format(xmlFilteredMessageNode, id, createdTme, message, matchedWords, participants);
 
@@ -559,27 +632,11 @@ namespace MessengerBot.Controllers
                 WriteToFile(xmlLog, filePath);
                 WriteToFile(xmlFilesLog, wpFilesFilesName);
                 WriteToFile(xmlFilteredeLog, filteredFilePath);
-
-               
-
-                //// Read file and write to Trace
-                //if (!File.Exists(filePath))
-                //{
-                //    Trace.TraceInformation("Reading");
-                //    using (StreamReader sr = File.OpenText(filePath))
-                //    {
-                //        string s = "";
-                //        while ((s = sr.ReadLine()) != null)
-                //        {
-                //            Trace.TraceInformation(s);
-                //        }
-                //    }
-                //}
+                
             }
-            catch (Exception ex)
-            {
-                Trace.TraceInformation(ex.ToString());
-
+            catch (Exception ex) {
+                
+                WriteToLogs(ex.ToString());
             }
         }
 
@@ -606,11 +663,46 @@ namespace MessengerBot.Controllers
                         }
                     }
                 }
-
             }
-            catch(Exception ex) { }
+            catch (Exception ex) {
+
+                WriteToLogs(ex.ToString());
+            }
         }
 
+        private void WriteToLogs(string msg)
+        {
+            try
+            {
+                //Trace.TraceInformation("WriteToLogs() msg: " + msg);
+                //Trace.TraceInformation("WriteToLogs() NASPath: " + NASPath);
+                string logPath = Path.Combine(NASPath, Path.Combine(ConfigurationManager.AppSettings["WPFOLDER"] , ConfigurationManager.AppSettings["MONITORLOG"]));
+                //Trace.TraceInformation("WriteToLogs() logPath: " + logPath);
+
+                if (msg != string.Empty)
+                {
+                    // Create a file if its not exist
+                    if (!File.Exists(logPath))
+                    {
+                        using (System.IO.StreamWriter file = new System.IO.StreamWriter(logPath))
+                        {
+                            file.WriteLine(msg);
+                        }
+                    }
+                    // Append to an existing file
+                    else
+                    {
+                        using (StreamWriter sw = File.AppendText(logPath))
+                        {
+                            sw.WriteLine(msg);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex) {
+
+            }
+        }
         #endregion
     }
 }
